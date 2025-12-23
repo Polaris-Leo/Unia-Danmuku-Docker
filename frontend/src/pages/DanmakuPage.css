@@ -1,0 +1,281 @@
+.danmaku-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.danmaku-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  color: white;
+}
+
+.danmaku-header h1 {
+  margin: 0;
+}
+
+.logout-btn {
+  background: #f56c6c;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background: #f34d4d;
+  transform: translateY(-2px);
+}
+
+.control-panel {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.room-input {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.room-input input {
+  flex: 1;
+  padding: 12px 15px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: border-color 0.3s;
+}
+
+.room-input input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.room-input input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.connect-btn, .disconnect-btn {
+  padding: 12px 30px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.connect-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.connect-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.disconnect-btn {
+  background: #ff6b6b;
+  color: white;
+}
+
+.disconnect-btn:hover {
+  background: #ff5252;
+  transform: translateY(-2px);
+}
+
+.info-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.status {
+  font-weight: 600;
+  padding: 5px 15px;
+  border-radius: 20px;
+}
+
+.status.connected {
+  color: #67c23a;
+  background: #f0f9ff;
+}
+
+.status.disconnected {
+  color: #909399;
+  background: #f4f4f5;
+}
+
+.popularity {
+  color: #606266;
+  font-weight: 600;
+}
+
+.clear-btn {
+  margin-left: auto;
+  padding: 8px 20px;
+  border: 1px solid #dcdfe6;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #606266;
+  transition: all 0.3s;
+}
+
+.clear-btn:hover {
+  background: #f5f7fa;
+  border-color: #c0c4cc;
+}
+
+.messages-container {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  height: 500px;
+  overflow-y: auto;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  margin-bottom: 20px;
+}
+
+.message {
+  padding: 6px 15px;
+  margin-bottom: 3px;
+  border-radius: 6px;
+  line-height: 1.6;
+  animation: slideIn 0.3s ease-out;
+  transition: background 0.2s;
+  border-left: none;
+}
+
+.message:hover {
+  background: #f5f7fa !important;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-danmaku {
+  background: #ffffff;
+}
+
+.message-gift {
+  background: #fffbf0;
+}
+
+.message-guard {
+  background: #fff5f5;
+}
+
+.message-welcome {
+  background: #f0fdf4;
+}
+
+.message-superchat {
+  background: #fef3c7;
+}
+
+.message-system {
+  background: #f9fafb;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.timestamp {
+  color: #9ca3af;
+  font-size: 11px;
+  margin-right: 8px;
+  font-family: 'Monaco', 'Menlo', monospace;
+}
+
+.medal {
+  display: inline-block;
+  background: linear-gradient(135deg, #ff6b6b, #feca57);
+  color: white;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-right: 6px;
+  font-weight: 600;
+}
+
+.username {
+  font-weight: 600;
+  color: #303133;
+  margin-right: 6px;
+}
+
+.content {
+  color: #606266;
+}
+
+.system-msg {
+  color: #606266;
+}
+
+.system-msg.error {
+  color: #f56c6c;
+  font-weight: 600;
+}
+
+.tips {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  color: #606266;
+}
+
+.tips p {
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #303133;
+}
+
+.tips ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tips li {
+  margin-bottom: 5px;
+  line-height: 1.6;
+}
+
+/* 滚动条样式 */
+.messages-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

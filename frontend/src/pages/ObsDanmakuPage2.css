@@ -1,0 +1,511 @@
+/* 
+ * OBS 弹幕页面 - 简洁样式
+ * 
+ * 自定义样式变量说明：
+ * --username-font-family: 用户名字体
+ * --username-font-size: 用户名字号
+ * --username-font-weight: 用户名粗细 (normal, bold, 100-900)
+ * --username-color: 用户名颜色
+ * --username-stroke-width: 用户名描边宽度
+ * --username-stroke-color: 用户名描边颜色
+ * 
+ * --danmaku-font-family: 弹幕字体
+ * --danmaku-font-size: 弹幕字号
+ * --danmaku-font-weight: 弹幕粗细
+ * --danmaku-color: 弹幕颜色
+ * --danmaku-stroke-width: 弹幕描边宽度
+ * --danmaku-stroke-color: 弹幕描边颜色
+ * 
+ * --avatar-size: 头像大小
+ * --item-spacing: 弹幕项间距
+ */
+
+/* 透明背景 */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  
+  /* 优化字体渲染，提升OBS中的清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* SC倒计时栏 */
+.sc-timer-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 24px;
+  padding: 24px 40px;
+  background: transparent;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+  overflow-x: auto;
+  overflow-y: visible;
+  flex-wrap: nowrap;
+}
+
+.sc-timer-bar::-webkit-scrollbar {
+  height: 0;
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* SC倒计时胶囊 */
+.sc-timer-capsule {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 32px 12px 12px;
+  border-radius: 100px;
+  overflow: hidden;
+  background: linear-gradient(
+    to left,
+    var(--sc-bg) 0%,
+    var(--sc-bg) var(--progress),
+    var(--sc-bg-light) var(--progress),
+    var(--sc-bg-light) 100%
+  );
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: capsuleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background 0.3s linear;
+  flex-shrink: 0;
+}
+
+@keyframes capsuleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* SC倒计时头像 */
+.sc-timer-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sc-timer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* SC倒计时金额 */
+.sc-timer-price {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 
+    -4px -4px 0 rgba(0, 0, 0, 0.8),
+    4px -4px 0 rgba(0, 0, 0, 0.8),
+    -4px 4px 0 rgba(0, 0, 0, 0.8),
+    4px 4px 0 rgba(0, 0, 0, 0.8),
+    0 6px 10px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* SC倒计时时间 */
+.sc-timer-time {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 
+    -4px -4px 0 rgba(0, 0, 0, 0.8),
+    4px -4px 0 rgba(0, 0, 0, 0.8),
+    -4px 4px 0 rgba(0, 0, 0, 0.8),
+    4px 4px 0 rgba(0, 0, 0, 0.8),
+    0 6px 10px rgba(0, 0, 0, 0.5);
+  font-variant-numeric: tabular-nums;
+  min-width: 120px;
+  text-align: center;
+}
+
+
+/* 根容器 */
+.obs-danmaku-simple {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
+  
+  /* 强制使用高质量渲染 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* 使用全局CSS变量 */
+:root {
+  /* 默认样式变量 - 用户名 */
+  --username-font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  --username-font-size: 16px;
+  --username-font-weight: bold;
+  --username-color: #333333;
+  --username-color-guard1: #ff1a75; /* 总督 */
+  --username-color-guard2: #9b39f4; /* 提督 */
+  --username-color-guard3: #1fa3f1; /* 舰长 */
+  --username-stroke-width: 2px;
+  --username-stroke-width-neg: -2px;
+  --username-stroke-color: #ffffff;
+  --username-enhanced-stroke: 1; /* 是否启用增强描边 */
+  --username-glow-intensity: 8px; /* 外发光强度 */
+  --username-shadow-intensity: 6px; /* 阴影强度 */
+  
+  /* 默认样式变量 - 弹幕内容 */
+  --danmaku-font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  --danmaku-font-size: 18px;
+  --danmaku-font-weight: normal;
+  --danmaku-color: #333333;
+  --danmaku-stroke-width: 2px;
+  --danmaku-stroke-width-neg: -2px;
+  --danmaku-stroke-color: #ffffff;
+  --danmaku-enhanced-stroke: 1; /* 是否启用增强描边 */
+  --danmaku-glow-intensity: 8px; /* 外发光强度 */
+  --danmaku-shadow-intensity: 6px; /* 阴影强度 */
+  
+  /* 默认样式变量 - 布局 */
+  --avatar-size: 48px;
+  --item-spacing: 12px;
+  --emot-size: 28px;
+}
+
+/* 弹幕列表 */
+.danmaku-list {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 有SC倒计时时，裁剪顶部160px */
+.has-sc-timer .danmaku-list {
+  clip-path: inset(160px 0 0 0);
+}
+
+/* 隐藏滚动条 */
+.danmaku-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* 弹幕项 */
+.danmaku-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--item-spacing);
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 头像 */
+.danmaku-item .avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.danmaku-item .avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 内容区 */
+.content-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 用户名行（包含舰长图标） */
+.username-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+/* 舰长图标 */
+.username-line .guard-icon {
+  height: var(--username-font-size) !important;
+  width: auto !important;
+  flex-shrink: 0;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+/* 用户名样式 */
+.username {
+  font-family: var(--username-font-family);
+  font-size: var(--username-font-size);
+  font-weight: var(--username-font-weight);
+  color: var(--username-color);
+  
+  /* 固定4px描边效果 */
+  text-shadow: 
+    -4px -4px 0 var(--username-stroke-color),
+    0 -4px 0 var(--username-stroke-color),
+    4px -4px 0 var(--username-stroke-color),
+    4px 0 0 var(--username-stroke-color),
+    4px 4px 0 var(--username-stroke-color),
+    0 4px 0 var(--username-stroke-color),
+    -4px 4px 0 var(--username-stroke-color),
+    -4px 0 0 var(--username-stroke-color),
+    0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* 舰长用户名 */
+.username.guard-3 {
+  color: var(--username-color-guard3);
+}
+
+/* 提督用户名 */
+.username.guard-2 {
+  color: var(--username-color-guard2);
+}
+
+/* 总督用户名 */
+.username.guard-1 {
+  color: var(--username-color-guard1);
+}
+
+/* 弹幕内容样式 */
+.danmaku-text {
+  font-family: var(--danmaku-font-family);
+  font-size: var(--danmaku-font-size);
+  font-weight: var(--danmaku-font-weight);
+  color: var(--danmaku-color);
+  line-height: 1.5;
+  word-wrap: break-word;
+  margin-left: 0.5em;
+  
+  /* 固定4px描边效果 */
+  text-shadow: 
+    -4px -4px 0 var(--danmaku-stroke-color),
+    0 -4px 0 var(--danmaku-stroke-color),
+    4px -4px 0 var(--danmaku-stroke-color),
+    4px 0 0 var(--danmaku-stroke-color),
+    4px 4px 0 var(--danmaku-stroke-color),
+    0 4px 0 var(--danmaku-stroke-color),
+    -4px 4px 0 var(--danmaku-stroke-color),
+    -4px 0 0 var(--danmaku-stroke-color),
+    0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* 表情图片 */
+.danmaku-emot {
+  display: inline-block;
+  height: var(--emot-size);
+  max-height: var(--emot-size);
+  vertical-align: middle;
+  margin: 0 2px;
+}
+
+/* SC（醒目留言）样式 */
+.sc-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--item-spacing);
+  border-radius: 50px;
+  overflow: hidden;
+  animation: scSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes scSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* SC上栏（头像、用户名、金额） */
+.sc-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 28px;
+  background: var(--sc-bg, #7497ED);
+  gap: 12px;
+  position: relative;
+}
+
+.sc-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.sc-avatar {
+  width: calc(var(--username-font-size) * 2.5);
+  height: calc(var(--username-font-size) * 2.5);
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sc-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sc-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sc-username {
+  font-family: var(--username-font-family);
+  font-size: var(--username-font-size);
+  font-weight: var(--username-font-weight);
+  color: #8836d3;
+  
+  /* 固定4px描边 */
+  text-shadow: 
+    -4px -4px 0 var(--username-stroke-color),
+    0 -4px 0 var(--username-stroke-color),
+    4px -4px 0 var(--username-stroke-color),
+    4px 0 0 var(--username-stroke-color),
+    4px 4px 0 var(--username-stroke-color),
+    0 4px 0 var(--username-stroke-color),
+    -4px 4px 0 var(--username-stroke-color),
+    -4px 0 0 var(--username-stroke-color),
+    0 4px 6px rgba(0, 0, 0, 0.5);
+  
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-price {
+  font-size: calc(var(--username-font-size) * 1.2);
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 10px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+}
+
+/* SC下栏（消息内容） */
+.sc-content {
+  padding: 15px 28px;
+  background: var(--sc-bg-light, #8AAAF2);
+  color: #6e46ff;
+  font-family: var(--danmaku-font-family);
+  font-size: var(--danmaku-font-size);
+  font-weight: var(--danmaku-font-weight);
+  line-height: 1.6;
+  word-wrap: break-word;
+  
+  /* 固定4px描边 */
+  text-shadow: 
+    -4px -4px 0 var(--danmaku-stroke-color),
+    0 -4px 0 var(--danmaku-stroke-color),
+    4px -4px 0 var(--danmaku-stroke-color),
+    4px 0 0 var(--danmaku-stroke-color),
+    4px 4px 0 var(--danmaku-stroke-color),
+    0 4px 0 var(--danmaku-stroke-color),
+    -4px 4px 0 var(--danmaku-stroke-color),
+    -4px 0 0 var(--danmaku-stroke-color),
+    0 4px 6px rgba(0, 0, 0, 0.5);
+  
+  min-height: 50px;
+}
+
+/* ===== 样式自定义示例 ===== */
+
+/* 
+示例1: 修改用户名为红色粗体，白色描边
+.obs-danmaku-simple {
+  --username-color: #ff0000;
+  --username-font-weight: bold;
+  --username-stroke-color: #ffffff;
+  --username-stroke-width: 2px;
+}
+*/
+
+/* 
+示例2: 修改弹幕为蓝色，黄色描边，加粗
+.obs-danmaku-simple {
+  --danmaku-color: #0066ff;
+  --danmaku-font-weight: bold;
+  --danmaku-stroke-color: #ffff00;
+  --danmaku-stroke-width: 3px;
+}
+*/
+
+/* 
+示例3: 修改字体
+.obs-danmaku-simple {
+  --username-font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+  --danmaku-font-family: 'Comic Sans MS', 'SimHei', sans-serif;
+}
+*/
+
+/* 
+示例4: 调整大小和间距
+.obs-danmaku-simple {
+  --username-font-size: 20px;
+  --danmaku-font-size: 22px;
+  --avatar-size: 60px;
+  --item-spacing: 16px;
+}
+*/

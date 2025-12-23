@@ -1,0 +1,7 @@
+# 日志文件目录
+
+此目录用于存储服务运行日志。
+
+- `backend.log` - 后端服务日志
+- `error.log` - 错误日志
+- `backend.pid` - 后端进程 PID（Linux/Mac）

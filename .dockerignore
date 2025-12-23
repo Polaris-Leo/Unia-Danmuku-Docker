@@ -1,0 +1,63 @@
+# Node modules
+node_modules/
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 前端构建目录（会在 Docker 中重新构建）
+frontend/dist/
+
+# 日志文件
+logs/
+*.log
+
+# 运行时数据
+backend/data/cookies.json
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 文档和脚本
+*.md
+DEPLOYMENT.md
+QUICK_START.md
+README.md
+
+# Windows 服务相关
+*.service
+*.bat
+*.ps1
+start.sh
+stop.sh
+
+# Docker 相关
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# 测试和开发文件
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# 其他
+.env.local
+.env.development
+.env.test
+package-lock.json

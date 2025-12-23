@@ -1,0 +1,32 @@
+{
+  "name": "unia-danmu-backend",
+  "version": "1.0.0",
+  "description": "Bilibili弹幕系统后端服务",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "keywords": [
+    "bilibili",
+    "danmaku",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "bilibili-live-ws": "^6.3.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "pako": "^2.1.0",
+    "qrcode": "^1.5.3",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
