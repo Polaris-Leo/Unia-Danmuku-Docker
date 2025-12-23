@@ -51,7 +51,10 @@ function DanmakuPage() {
     }
 
     // 连接WebSocket
-    const ws = new WebSocket(`ws://localhost:3001/ws/danmaku?roomId=${roomId}`);
+    // 根据当前协议和主机动态构建 WebSocket URL
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host; // 包含端口号
+    const ws = new WebSocket(`${protocol}//${host}/ws/danmaku?roomId=${roomId}`);
     
     ws.onopen = () => {
       console.log('WebSocket连接成功');
