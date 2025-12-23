@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './ObsDanmakuPage.css';
+import './ObsDanmakuPage2.css';
 
 const ObsDanmakuPage = () => {
   // 立即同步加载样式设置，避免第一条消息显示异常
