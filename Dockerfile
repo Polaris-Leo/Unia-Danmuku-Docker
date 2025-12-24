@@ -14,7 +14,9 @@ RUN npm install
 COPY frontend/ ./
 
 # 构建前端静态文件
-RUN npm run build
+RUN npm run build && \
+    echo "Frontend build completed at $(date)" && \
+    ls -la dist/
 
 # 阶段 2: 构建最终镜像
 FROM node:18-alpine

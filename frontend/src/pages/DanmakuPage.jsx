@@ -54,10 +54,20 @@ function DanmakuPage() {
     // 根据当前协议和主机动态构建 WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // 包含端口号
-    const ws = new WebSocket(`${protocol}//${host}/ws/danmaku?roomId=${roomId}`);
+    const wsUrl = `${protocol}//${host}/ws/danmaku?roomId=${roomId}`;
+    
+    console.log('🔍 [DanmakuPage] WebSocket 连接信息:');
+    console.log('  - window.location.protocol:', window.location.protocol);
+    console.log('  - window.location.host:', window.location.host);
+    console.log('  - 计算出的 protocol:', protocol);
+    console.log('  - 计算出的 host:', host);
+    console.log('  - 最终 WebSocket URL:', wsUrl);
+    
+    const ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
-      console.log('WebSocket连接成功');
+      console.log('✅ WebSocket连接成功');
+      console.log('  - 连接的 URL:', wsUrl);
       setConnected(true);
       addSystemMessage('已连接到直播间');
     };
@@ -68,7 +78,9 @@ function DanmakuPage() {
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket错误:', error);
+      console.error('❌ WebSocket错误:', error);
+      console.error('  - 尝试连接的 URL:', wsUrl);
+      console.error('  - 当前页面地址:', window.location.href);
       addSystemMessage('连接错误', 'error');
     };
 

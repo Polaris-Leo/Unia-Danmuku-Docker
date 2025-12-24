@@ -126,7 +126,15 @@ const ObsDanmakuPage = () => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // 包含端口号
     const wsUrl = `${protocol}//${host}/ws/danmaku?roomId=${roomId}`;
-    console.log('🔌 创建 WebSocket 连接 [实例ID:', Date.now() + ']:', wsUrl);
+    
+    console.log('🔍 [ObsDanmakuPage] WebSocket 连接信息:');
+    console.log('  - window.location.href:', window.location.href);
+    console.log('  - window.location.protocol:', window.location.protocol);
+    console.log('  - window.location.host:', window.location.host);
+    console.log('  - 计算出的 protocol:', protocol);
+    console.log('  - 计算出的 host:', host);
+    console.log('  - 最终 WebSocket URL:', wsUrl);
+    console.log('🔌 创建 WebSocket 连接 [实例ID:', Date.now() + ']');
     const websocket = new WebSocket(wsUrl);
     wsRef.current = websocket;
     isClosingRef.current = false;
@@ -183,6 +191,9 @@ const ObsDanmakuPage = () => {
 
     websocket.onerror = (error) => {
       console.error('❌ WebSocket 错误:', error);
+      console.error('  - 尝试连接的 URL:', wsUrl);
+      console.error('  - 当前页面地址:', window.location.href);
+      console.error('  - WebSocket readyState:', websocket.readyState);
       setError('WebSocket 连接错误');
       setConnected(false);
     };
