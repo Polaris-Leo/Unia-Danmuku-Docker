@@ -19,7 +19,10 @@ const PORT = process.env.PORT || 3000;
 
 // 中间件
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    'http://0.0.0.0:3000',
+    'https://danmuku.unia.love'
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -59,7 +62,7 @@ app.use((err, req, res, next) => {
 
 // 启动服务器
 server.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
+  console.log(`🚀 Server is running on http://0.0.0.0:${PORT}`);
   console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL}`);
-  console.log(`🌐 WebSocket URL: ws://localhost:${PORT}/ws/danmaku`);
+  console.log(`🌐 WebSocket URL: ws://0.0.0.0:${PORT}/ws/danmaku`);
 });
