@@ -163,14 +163,25 @@ html, body {
 }
 
 /* 用户名 */
+
 .username {
   font-size: 14px;
   font-weight: 600;
-  color: var(--text);
+  color: var(--username-color, #333);
   text-shadow: 
     0 0 2px rgba(255, 255, 255, 0.95),
     0 0 2px rgba(255, 255, 255, 0.95),
     0 0 2px rgba(255, 255, 255, 0.95);
+}
+
+.event--message.guard-level--1 .username {
+  color: var(--username-color-guard1, #ff1a75);
+}
+.event--message.guard-level--2 .username {
+  color: var(--username-color-guard2, #9b39f4);
+}
+.event--message.guard-level--3 .username {
+  color: var(--username-color-guard3, #1fa3f1);
 }
 
 
