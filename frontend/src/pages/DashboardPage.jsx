@@ -80,7 +80,7 @@ function DashboardPage() {
               <li onClick={() => navigate('/danmaku')} style={{cursor: 'pointer'}}>
                 📺 实时弹幕接收 →
               </li>
-              <li onClick={() => navigate('/obs-danmaku')} style={{cursor: 'pointer'}}>
+              <li onClick={() => navigate('/obs-settings')} style={{cursor: 'pointer'}}>
                 💬 OBS弹幕姬 →
               </li>
               <li>👥 直播信息面板 (开发中)</li>
