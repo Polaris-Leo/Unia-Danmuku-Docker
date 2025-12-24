@@ -5,7 +5,7 @@
 FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 COPY frontend/package*.json ./
-RUN npm ci
+RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
@@ -17,7 +17,7 @@ RUN apk add --no-cache dumb-init
 # 复制后端依赖
 COPY backend/package*.json ./backend/
 WORKDIR /app/backend
-RUN npm ci --only=production
+RUN npm install --only=production
 # 复制后端源代码
 COPY backend/src ./src
 # 复制前端构建产物到后端静态目录
