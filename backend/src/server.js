@@ -3,6 +3,8 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import danmakuRoutes, { createDanmakuWSS } from './routes/danmaku.js';
 
@@ -23,6 +25,24 @@ app.use(cookieParser());
 // 路由
 app.use('/api/auth', authRoutes);
 app.use('/api/danmaku', danmakuRoutes);
+
+// 静态文件托管 (生产环境)
+if (process.env.NODE_ENV === 'production') {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  // 对应 Dockerfile 中的路径结构: /app/backend/src -> /app/frontend/dist
+  const distPath = path.join(__dirname, '../../frontend/dist');
+  
+  app.use(express.static(distPath));
+  
+  // 处理 SPA 路由，所有未匹配的请求返回 index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // 健康检查
 app.get('/api/health', (req, res) => {
