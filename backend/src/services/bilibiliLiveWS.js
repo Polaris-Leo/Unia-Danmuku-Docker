@@ -204,29 +204,44 @@ export class BilibiliLiveWS {
   }
 
   /**
-   * 获取用户头像URL（后台异步获取，避免频繁触发限速）
+   * 获取用户头像URL
+   * @param {number} uid 用户UID
+   * @param {boolean} shouldWait 是否等待网络请求（如果缓存未命中）
    */
-  async getUserFace(uid) {
+  async getUserFace(uid, shouldWait = false) {
     // 检查缓存
     if (this.userFaceCache.has(uid)) {
       return this.userFaceCache.get(uid);
     }
 
-    // 先返回默认头像，后台异步获取真实头像
     const defaultFace = 'https://i0.hdslb.com/bfs/face/member/noface.jpg';
-    this.fetchUserFaceInBackground(uid);
-    return defaultFace;
+
+    if (shouldWait) {
+      // 如果需要等待（如上舰消息），则直接请求API
+      const faceUrl = await this._fetchUserFaceFromApi(uid);
+      return faceUrl || defaultFace;
+    } else {
+      // 否则返回默认头像，后台异步获取真实头像
+      this.fetchUserFaceInBackground(uid);
+      return defaultFace;
+    }
   }
 
   /**
-   * 后台异步获取用户头像
+   * 后台异步获取用户头像（带延迟）
    */
   async fetchUserFaceInBackground(uid) {
     // 添加随机延迟，避免频率限制（1-3秒）
     const delay = 1000 + Math.random() * 2000;
     await new Promise(resolve => setTimeout(resolve, delay));
-    
-    console.log(`🔍 后台获取头像: uid=${uid}`);
+    await this._fetchUserFaceFromApi(uid);
+  }
+
+  /**
+   * 从API获取用户头像（内部方法）
+   */
+  async _fetchUserFaceFromApi(uid) {
+    console.log(`🔍 获取头像: uid=${uid}`);
     
     try {
       const headers = {
@@ -247,16 +262,19 @@ export class BilibiliLiveWS {
       });
 
       if (response.data.code === 0 && response.data.data && response.data.data.face) {
-        const faceUrl = response.data.data.face;
+        let faceUrl = response.data.data.face;
+        if (faceUrl && faceUrl.startsWith('http://')) {
+          faceUrl = faceUrl.replace('http://', 'https://');
+        }
         this.userFaceCache.set(uid, faceUrl);
         this.saveFaceCache();  // 持久化保存
-        console.log(`✅ 后台获取成功: uid=${uid}`);
+        console.log(`✅ 获取头像成功: uid=${uid}`);
         return faceUrl;
       } else {
-        console.log(`⚠️  后台获取失败(${uid}): code=${response.data.code}`);
+        console.log(`⚠️  获取头像失败(${uid}): code=${response.data.code}`);
       }
     } catch (error) {
-      console.log(`❌ 后台获取异常(${uid}): ${error.message}`);
+      console.log(`❌ 获取头像异常(${uid}): ${error.message}`);
     }
 
     return null;
@@ -675,17 +693,31 @@ export class BilibiliLiveWS {
         // 尝试获取更具体的动静资源
         // 如果有 gift_info，优先用里面的 webp 做动态图，img_basic 做静态图
         // 否则回退到 basicIcon
-        const iconDynamic = (giftData.gift_info && giftData.gift_info.webp) || basicIcon;
-        const iconStatic = (giftData.gift_info && giftData.gift_info.img_basic) || basicIcon;
+        let iconDynamic = (giftData.gift_info && giftData.gift_info.webp) || basicIcon;
+        let iconStatic = (giftData.gift_info && giftData.gift_info.img_basic) || basicIcon;
+
+        // 确保图标链接是 HTTPS
+        if (iconDynamic && iconDynamic.startsWith('http://')) {
+          iconDynamic = iconDynamic.replace('http://', 'https://');
+        }
+        if (iconStatic && iconStatic.startsWith('http://')) {
+          iconStatic = iconStatic.replace('http://', 'https://');
+        }
 
         console.log(`🎁 收到礼物: ${giftData.giftName} (ID: ${giftData.giftId}, 价格: ${giftData.price})`);
+        console.log(`   - 图标: ${iconDynamic || '无'}`);
         
+        let giftUserFace = giftData.face;
+        if (giftUserFace && giftUserFace.startsWith('http://')) {
+          giftUserFace = giftUserFace.replace('http://', 'https://');
+        }
+
         const gift = {
           type: 'gift',
           user: {
             uid: giftData.uid,
             username: giftData.uname,
-            face: giftData.face
+            face: giftUserFace
           },
           giftName: giftData.giftName,
           giftId: giftData.giftId,
@@ -709,7 +741,8 @@ export class BilibiliLiveWS {
         
       case 'GUARD_BUY': // 上舰
         const guardUid = data.data.uid;
-        const guardFace = await this.getUserFace(guardUid);
+        // 上舰消息比较重要，等待头像获取（避免显示默认头像）
+        const guardFace = await this.getUserFace(guardUid, true);
         
         const guard = {
           type: 'guard',
@@ -721,7 +754,8 @@ export class BilibiliLiveWS {
           guardLevel: data.data.guard_level,
           num: data.data.num,
           price: data.data.price,
-          giftName: data.data.gift_name
+          giftName: data.data.gift_name,
+          timestamp: data.data.start_time || Math.floor(Date.now() / 1000)
         };
         
         // 保存到历史记录
@@ -754,12 +788,17 @@ export class BilibiliLiveWS {
         break;
         
       case 'SUPER_CHAT_MESSAGE': // SC醒目留言
+        let scFace = data.data.user_info.face;
+        if (scFace && scFace.startsWith('http://')) {
+          scFace = scFace.replace('http://', 'https://');
+        }
+
         const sc = {
           type: 'superchat',
           user: {
             uid: data.data.uid,
             username: data.data.user_info.uname,
-            face: data.data.user_info.face
+            face: scFace
           },
           price: data.data.price,
           message: data.data.message,

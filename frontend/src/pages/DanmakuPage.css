@@ -640,35 +640,33 @@
   text-overflow: ellipsis;
 }
 
-.danmaku-dashboard .gift-highlight-right {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 2;
-  text-align: right;
-}
-
-.danmaku-dashboard .gift-highlight-price {
-  font-size: 28px;
+.danmaku-dashboard .gift-highlight-price-left {
+  font-size: 18px;
   font-weight: 800;
+  margin-left: 10px;
+  background: rgba(0,0,0,0.2);
+  padding: 2px 8px;
+  border-radius: 4px;
   text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  white-space: nowrap;
 }
 
 .danmaku-dashboard .gift-highlight-bg-icon {
   position: absolute;
-  right: -10px;
-  bottom: -10px;
-  width: 100px;
-  height: 100px;
-  opacity: 0.6;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 80px;
+  height: 80px;
+  opacity: 1;
   z-index: 1;
-  transform: rotate(-10deg);
 }
 
 .danmaku-dashboard .gift-highlight-bg-icon img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 /* Small Gift Row (< 10 CNY) */

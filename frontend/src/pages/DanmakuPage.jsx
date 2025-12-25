@@ -233,9 +233,10 @@ function DanmakuPage() {
       wsRef.current.close();
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.host;
-    const ws = new WebSocket(`${protocol}//${host}/ws/danmaku?roomId=${idToUse}`);
+    // Use window.location.hostname to allow connection from other devices on the same network
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsHost = window.location.host; // Includes port if present
+    const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/danmaku?roomId=${idToUse}`);
     
     ws.onopen = () => {
       console.log('WebSocket连接成功');
@@ -322,7 +323,15 @@ function DanmakuPage() {
 
         setDanmakuList(historyDanmaku.slice(-200));
         setScList(historySc.slice(-100));
-        setGiftList([...historyGift, ...historyGuard].slice(-100));
+        
+        // Merge gifts and guards, then sort by timestamp
+        const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => {
+          const timeA = a.timestamp || 0;
+          const timeB = b.timestamp || 0;
+          return timeA - timeB;
+        });
+        
+        setGiftList(combinedGifts.slice(-100));
         break;
       default:
         break;
@@ -788,11 +797,9 @@ function DanmakuPage() {
                       <div className="gift-highlight-content">
                         <div className="gift-highlight-top">
                           <span className="gift-highlight-username">{msg.user?.username}</span>
+                          <span className="gift-highlight-price-left">{priceDisplay}</span>
                         </div>
                         <div className="gift-highlight-name">{msg.giftName}</div>
-                      </div>
-                      <div className="gift-highlight-right">
-                         <div className="gift-highlight-price">{priceDisplay}</div>
                       </div>
                       {iconSrc && (
                         <div className="gift-highlight-bg-icon">

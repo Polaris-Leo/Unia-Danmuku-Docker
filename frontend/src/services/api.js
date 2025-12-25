@@ -41,4 +41,30 @@ export const logout = async () => {
   return response.data;
 };
 
+/**
+ * 获取监控房间列表
+ */
+export const getMonitoredRooms = async () => {
+  const response = await api.get('/monitor/rooms');
+  return response.data;
+};
+
+/**
+ * 添加监控房间
+ * @param {string} roomId
+ */
+export const addMonitoredRoom = async (roomId) => {
+  const response = await api.post('/monitor/rooms', { roomId });
+  return response.data;
+};
+
+/**
+ * 移除监控房间
+ * @param {string} roomId
+ */
+export const removeMonitoredRoom = async (roomId) => {
+  const response = await api.delete(`/monitor/rooms/${roomId}`);
+  return response.data;
+};
+
 export default api;

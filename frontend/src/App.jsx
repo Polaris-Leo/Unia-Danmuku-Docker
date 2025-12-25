@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import DanmakuPage from './pages/DanmakuPage';
 import ObsDanmakuPage from './pages/ObsDanmakuPage';
 import ObsSettingsPage from './pages/ObsSettingsPage';
+import MonitorPage from './pages/MonitorPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/danmaku" element={<DanmakuPage />} />
         <Route path="/obs" element={<ObsDanmakuPage />} />
         <Route path="/obs-settings" element={<ObsSettingsPage />} />
+        <Route path="/monitor" element={<MonitorPage />} />
       </Routes>
     </BrowserRouter>
   );

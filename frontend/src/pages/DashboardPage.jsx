@@ -98,6 +98,9 @@ function DashboardPage() {
               <button className="action-btn secondary" onClick={handleCopyOBSLink}>
                 🔗 复制OBS链接
               </button>
+              <button className="action-btn outline" onClick={() => navigate('/monitor')}>
+                📡 后台监控配置
+              </button>
             </div>
             {copyStatus && <div className="status-msg success" style={{textAlign: 'center', marginTop: '10px', color: '#4caf50'}}>{copyStatus}</div>}
           </div>

@@ -216,3 +216,14 @@
   background: #d0d0d0;
   transform: translateY(-1px);
 }
+
+.action-btn.outline {
+  background: transparent;
+  border: 2px solid #23ade5;
+  color: #23ade5;
+}
+
+.action-btn.outline:hover {
+  background: #f0f9ff;
+  transform: translateY(-1px);
+}
