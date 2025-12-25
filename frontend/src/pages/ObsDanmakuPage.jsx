@@ -120,7 +120,9 @@ const ObsDanmakuPage = () => {
     const params = new URLSearchParams(window.location.search);
     const roomId = params.get('room') || localStorage.getItem('obsRoomId') || '1017';
 
-    const wsUrl = `ws://localhost:3001/ws/danmaku?roomId=${roomId}`;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const wsUrl = `${protocol}//${host}/ws/danmaku?roomId=${roomId}`;
     console.log('🔌 创建 WebSocket 连接 [实例ID:', Date.now() + ']:', wsUrl);
     const websocket = new WebSocket(wsUrl);
     wsRef.current = websocket;

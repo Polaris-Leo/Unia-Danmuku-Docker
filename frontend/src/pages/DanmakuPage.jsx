@@ -233,7 +233,9 @@ function DanmakuPage() {
       wsRef.current.close();
     }
 
-    const ws = new WebSocket(`ws://localhost:3001/ws/danmaku?roomId=${idToUse}`);
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const ws = new WebSocket(`${protocol}//${host}/ws/danmaku?roomId=${idToUse}`);
     
     ws.onopen = () => {
       console.log('WebSocket连接成功');
