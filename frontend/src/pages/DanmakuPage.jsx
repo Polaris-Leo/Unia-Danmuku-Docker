@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NumberFlow from '@number-flow/react';
-import { getAuthStatus, logout } from '../services/api';
+import { getAuthStatus, logout, getHistorySessions, getHistoryData } from '../services/api';
 import './DanmakuPage.css';
 
 function DanmakuPage() {
@@ -9,6 +9,12 @@ function DanmakuPage() {
   const [roomId, setRoomId] = useState('');
   const [connected, setConnected] = useState(false);
   
+  // History Mode State
+  const [isHistoryMode, setIsHistoryMode] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historySessions, setHistorySessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+
   // Lists for different columns
   const [danmakuList, setDanmakuList] = useState([]);
   const [scList, setScList] = useState([]);
@@ -277,6 +283,79 @@ function DanmakuPage() {
     setConnected(false);
   };
 
+  // History Functions
+  const openHistoryModal = async () => {
+    if (!roomId) return;
+    try {
+      const data = await getHistorySessions(roomId);
+      if (data.success) {
+        setHistorySessions(data.sessions);
+        setShowHistoryModal(true);
+      }
+    } catch (error) {
+      console.error('Failed to fetch history sessions:', error);
+      alert('获取历史记录失败');
+    }
+  };
+
+  const loadHistorySession = async (sessionId) => {
+    try {
+      // 1. Disconnect live connection
+      disconnect();
+      setIsHistoryMode(true);
+      setCurrentSessionId(sessionId);
+      setShowHistoryModal(false);
+      
+      // 2. Clear current lists
+      setDanmakuList([]);
+      setScList([]);
+      setGiftList([]);
+      
+      // 3. Fetch history data
+      const response = await getHistoryData(roomId, sessionId);
+      if (response.success) {
+        const { danmaku, superchat, gift, guard } = response.data;
+        
+        // Process and set data
+        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+
+        setDanmakuList(historyDanmaku); // Load all history, not just last 200
+        setScList(historySc);
+        
+        // Merge gifts and guards
+        const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => {
+          const timeA = a.timestamp || 0;
+          const timeB = b.timestamp || 0;
+          return timeA - timeB;
+        });
+        setGiftList(combinedGifts);
+        
+        // Scroll to bottom after loading
+        setTimeout(() => {
+            if (danmakuEndRef.current) danmakuEndRef.current.scrollIntoView();
+            if (scEndRef.current) scEndRef.current.scrollIntoView();
+            if (giftEndRef.current) giftEndRef.current.scrollIntoView();
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Failed to load history data:', error);
+      alert('加载历史数据失败');
+      returnToLive();
+    }
+  };
+
+  const returnToLive = () => {
+    setIsHistoryMode(false);
+    setCurrentSessionId(null);
+    setDanmakuList([]);
+    setScList([]);
+    setGiftList([]);
+    connectRoom(roomId);
+  };
+
   const handleMessage = (data) => {
     const msg = { ...data, id: Date.now() + Math.random() };
     
@@ -494,11 +573,26 @@ function DanmakuPage() {
           <div className="logo-area" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <img src="/logo192.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '50%' }} onError={(e) => e.target.style.display = 'none'} />
             <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>Unia Danmuku</span>
+            {isHistoryMode && (
+              <span className="history-badge">历史回放模式</span>
+            )}
           </div>
         </div>
 
         <div className="header-right">
-          {connected && (
+          <div className="header-actions" style={{ marginRight: '20px' }}>
+            {isHistoryMode ? (
+              <button className="btn-live" onClick={returnToLive}>
+                返回实时直播
+              </button>
+            ) : (
+              <button className="btn-history" onClick={openHistoryModal}>
+                查看历史场次
+              </button>
+            )}
+          </div>
+
+          {(connected || isHistoryMode) && (
             <div className="stats-bar" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               {/* Anchor Info */}
               <div className="stat-item anchor-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -875,6 +969,42 @@ function DanmakuPage() {
           </div>
         </div>
       </div>
+
+      {/* History Selection Modal */}
+      {showHistoryModal && (
+        <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>选择历史直播场次</h3>
+              <button className="close-btn" onClick={() => setShowHistoryModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {historySessions.length === 0 ? (
+                <div className="empty-history">暂无历史记录</div>
+              ) : (
+                <div className="session-list">
+                  {historySessions.map(sessionId => {
+                    const date = new Date(sessionId * 1000);
+                    const dateStr = date.toLocaleDateString();
+                    const timeStr = date.toLocaleTimeString();
+                    return (
+                      <div 
+                        key={sessionId} 
+                        className="session-item"
+                        onClick={() => loadHistorySession(sessionId)}
+                      >
+                        <span className="session-date">{dateStr}</span>
+                        <span className="session-time">{timeStr}</span>
+                        <span className="session-arrow">→</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

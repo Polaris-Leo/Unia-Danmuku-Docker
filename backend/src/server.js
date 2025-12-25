@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import authRoutes from './routes/auth.js';
 import danmakuRoutes, { createDanmakuWSS } from './routes/danmaku.js';
 import monitorRoutes from './routes/monitor.js';
+import historyRoutes from './routes/history.js';
 import { roomManager } from './services/roomManager.js';
 
 dotenv.config();
@@ -31,6 +32,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRoutes);
 app.use('/api/danmaku', danmakuRoutes);
 app.use('/api/monitor', monitorRoutes);
+app.use('/api/history', historyRoutes);
 
 // 健康检查
 app.get('/api/health', (req, res) => {

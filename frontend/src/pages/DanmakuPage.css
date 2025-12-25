@@ -865,3 +865,144 @@
     transform: translateX(-50%) scale(1) translateY(0);
   }
 }
+
+/* History Mode Styles */
+.history-badge {
+  background-color: #faad14;
+  color: white;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-left: 8px;
+}
+
+.btn-history, .btn-live {
+  padding: 6px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-history {
+  background-color: #f0f2f5;
+  color: #666;
+}
+
+.btn-history:hover {
+  background-color: #e6f7ff;
+  color: #1890ff;
+}
+
+.btn-live {
+  background-color: #52c41a;
+  color: white;
+}
+
+.btn-live:hover {
+  background-color: #73d13d;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 400px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #999;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: #666;
+}
+
+.modal-body {
+  padding: 10px 0;
+  overflow-y: auto;
+}
+
+.session-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-item {
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.session-item:last-child {
+  border-bottom: none;
+}
+
+.session-item:hover {
+  background-color: #f0f7ff;
+}
+
+.session-date {
+  font-weight: bold;
+  color: #333;
+  margin-right: 12px;
+}
+
+.session-time {
+  color: #666;
+  flex: 1;
+}
+
+.session-arrow {
+  color: #ccc;
+}
+
+.empty-history {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}

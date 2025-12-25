@@ -21,6 +21,32 @@ function getSessionDir(roomId, sessionId) {
 }
 
 /**
+ * 获取指定房间的所有历史会话列表
+ * @param {string|number} roomId 
+ * @returns {Promise<Array>} 会话ID(时间戳)列表，按时间倒序排列
+ */
+export async function getSessions(roomId) {
+  const roomDir = path.join(DATA_DIR, String(roomId));
+  if (!fs.existsSync(roomDir)) {
+    return [];
+  }
+
+  try {
+    const files = await fs.promises.readdir(roomDir);
+    // 过滤出数字命名的文件夹（时间戳）
+    const sessions = files
+      .filter(file => /^\d+$/.test(file) && fs.statSync(path.join(roomDir, file)).isDirectory())
+      .map(file => parseInt(file, 10))
+      .sort((a, b) => b - a); // 倒序排列
+
+    return sessions;
+  } catch (error) {
+    console.error(`[History] Failed to get sessions for room ${roomId}:`, error);
+    return [];
+  }
+}
+
+/**
  * 保存消息到历史记录 (追加模式)
  * @param {string|number} roomId 直播间ID
  * @param {string|number} sessionId 会话ID (通常是开播时间戳)

@@ -85,4 +85,23 @@ export const resumeMonitoredRoom = async (roomId) => {
   return response.data;
 };
 
+/**
+ * 获取历史会话列表
+ * @param {string} roomId
+ */
+export const getHistorySessions = async (roomId) => {
+  const response = await api.get(`/history/${roomId}/sessions`);
+  return response.data;
+};
+
+/**
+ * 获取历史会话数据
+ * @param {string} roomId
+ * @param {string} sessionId
+ */
+export const getHistoryData = async (roomId, sessionId) => {
+  const response = await api.get(`/history/${roomId}/${sessionId}`);
+  return response.data;
+};
+
 export default api;
