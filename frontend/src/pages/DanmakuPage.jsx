@@ -280,18 +280,57 @@ function DanmakuPage() {
   const handleMessage = (data) => {
     const msg = { ...data, id: Date.now() + Math.random() };
     
+    // 辅助函数：检查重复
+    const isDuplicate = (list, newItem, type) => {
+      const fingerprint = type === 'danmaku' 
+        ? `${newItem.timestamp}-${newItem.user?.uid}-${newItem.content}`
+        : type === 'superchat'
+        ? `${newItem.time}-${newItem.user?.uid}-${newItem.price}`
+        : type === 'gift'
+        ? `${newItem.timestamp}-${newItem.user?.uid}-${newItem.giftId}-${newItem.num}`
+        : `${newItem.timestamp}-${newItem.user?.uid}-${newItem.guardLevel}`; // guard
+
+      return list.slice(-20).some(item => {
+        const itemFingerprint = type === 'danmaku'
+          ? `${item.timestamp}-${item.user?.uid}-${item.content}`
+          : type === 'superchat'
+          ? `${item.time}-${item.user?.uid}-${item.price}`
+          : type === 'gift'
+          ? `${item.timestamp}-${item.user?.uid}-${item.giftId}-${item.num}`
+          : `${item.timestamp}-${item.user?.uid}-${item.guardLevel}`;
+        return itemFingerprint === fingerprint;
+      });
+    };
+
     switch (data.type) {
       case 'danmaku':
-        setDanmakuList(prev => [...prev, msg].slice(-200));
+        setDanmakuList(prev => {
+          if (isDuplicate(prev, msg, 'danmaku')) return prev;
+          return [...prev, msg].slice(-200);
+        });
         break;
       case 'superchat':
-        setScList(prev => [...prev, msg].slice(-100));
-        setDanmakuList(prev => [...prev, msg].slice(-200));
+        setScList(prev => {
+          if (isDuplicate(prev, msg, 'superchat')) return prev;
+          return [...prev, msg].slice(-100);
+        });
+        setDanmakuList(prev => {
+          // SC也显示在弹幕流中，同样去重
+          if (isDuplicate(prev, msg, 'superchat')) return prev;
+          return [...prev, msg].slice(-200);
+        });
         break;
       case 'gift':
       case 'guard':
-        setGiftList(prev => [...prev, msg].slice(-100));
-        setDanmakuList(prev => [...prev, msg].slice(-200));
+        setGiftList(prev => {
+          if (isDuplicate(prev, msg, data.type)) return prev;
+          return [...prev, msg].slice(-100);
+        });
+        setDanmakuList(prev => {
+          // 礼物也显示在弹幕流中，同样去重
+          if (isDuplicate(prev, msg, data.type)) return prev;
+          return [...prev, msg].slice(-200);
+        });
         break;
       case 'watched':
         setWatchedCount(data.num || 0);

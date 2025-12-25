@@ -120,7 +120,11 @@ const ObsDanmakuPage = () => {
     const params = new URLSearchParams(window.location.search);
     const roomId = params.get('room') || localStorage.getItem('obsRoomId') || '1017';
 
-    const wsUrl = `ws://localhost:3001/ws/danmaku?roomId=${roomId}`;
+    // 动态构建WebSocket URL，支持局域网访问
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host; // 包含域名和端口 (如 localhost:5173 或 192.168.1.x:3000)
+    const wsUrl = `${protocol}//${host}/ws/danmaku?roomId=${roomId}`;
+    
     console.log('🔌 创建 WebSocket 连接 [实例ID:', Date.now() + ']:', wsUrl);
     const websocket = new WebSocket(wsUrl);
     wsRef.current = websocket;
@@ -135,25 +139,31 @@ const ObsDanmakuPage = () => {
     websocket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('📨 OBS收到WebSocket消息:', data.type, data);
-        console.log('🔍 消息详细信息:', {
-          type: data.type,
-          hasUser: !!data.user,
-          username: data.user?.username,
-          price: data.price,
-          message: data.message,
-          timestamp: data.timestamp
-        });
         
         if (data.type === 'danmaku' || data.type === 'superchat') {
-          console.log('✅ 添加消息到列表:', data.type, data.user?.username);
           setMessages(prev => {
+            // 生成唯一指纹用于去重
+            const fingerprint = data.type === 'danmaku' 
+              ? `${data.timestamp}-${data.user?.uid}-${data.content}`
+              : `${data.time}-${data.user?.uid}-${data.price}`;
+            
+            // 检查最近的消息中是否已存在相同指纹
+            const isDuplicate = prev.slice(-20).some(msg => {
+              const msgFingerprint = msg.type === 'danmaku'
+                ? `${msg.timestamp}-${msg.user?.uid}-${msg.content}`
+                : `${msg.time}-${msg.user?.uid}-${msg.price}`;
+              return msgFingerprint === fingerprint;
+            });
+
+            if (isDuplicate) {
+              console.log('⚠️ 忽略重复消息:', fingerprint);
+              return prev;
+            }
+
             const newMessages = [...prev, {
               id: Date.now() + Math.random(),
               ...data
             }].slice(-50);
-            console.log('📋 当前消息列表长度:', newMessages.length);
-            console.log('📋 最新消息:', newMessages[newMessages.length - 1]);
             return newMessages;
           });
           

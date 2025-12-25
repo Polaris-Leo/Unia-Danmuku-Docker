@@ -284,6 +284,12 @@ export class BilibiliLiveWS {
    * 连接直播间
    */
   async connect() {
+    // 如果已有连接，先断开
+    if (this.ws) {
+      console.log('⚠️ 检测到已有连接，正在断开...');
+      this.disconnect();
+    }
+
     try {
       // 1. 获取真实房间号
       const realRoomId = await this.getRealRoomId();
