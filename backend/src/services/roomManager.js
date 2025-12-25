@@ -15,7 +15,7 @@ if (!fs.existsSync(DATA_DIR)) {
 class RoomManager {
   constructor() {
     this.connections = new Map(); // roomId -> BilibiliLiveWS instance
-    this.monitoredRooms = new Set(); // Set of roomIds
+    this.monitoredRooms = new Map(); // roomId -> { paused: boolean, addedAt: number }
     this.wss = null; // WebSocket Server instance
     
     this.loadMonitoredRooms();
@@ -29,7 +29,18 @@ class RoomManager {
     try {
       if (fs.existsSync(MONITOR_FILE)) {
         const data = JSON.parse(fs.readFileSync(MONITOR_FILE, 'utf-8'));
-        this.monitoredRooms = new Set(data.map(String));
+        
+        // Migration: Handle old array format
+        if (Array.isArray(data)) {
+          data.forEach(id => {
+            this.monitoredRooms.set(String(id), { paused: false, addedAt: Date.now() });
+          });
+        } else {
+          // New object format
+          Object.entries(data).forEach(([id, config]) => {
+            this.monitoredRooms.set(id, config);
+          });
+        }
         console.log(`📋 Loaded ${this.monitoredRooms.size} monitored rooms`);
       }
     } catch (error) {
@@ -39,7 +50,7 @@ class RoomManager {
 
   saveMonitoredRooms() {
     try {
-      const data = Array.from(this.monitoredRooms);
+      const data = Object.fromEntries(this.monitoredRooms);
       fs.writeFileSync(MONITOR_FILE, JSON.stringify(data, null, 2));
     } catch (error) {
       console.error('Failed to save monitored rooms:', error);
@@ -47,13 +58,17 @@ class RoomManager {
   }
 
   getMonitoredRooms() {
-    return Array.from(this.monitoredRooms);
+    return Array.from(this.monitoredRooms.keys());
+  }
+  
+  getRoomConfig(roomId) {
+    return this.monitoredRooms.get(String(roomId));
   }
 
   async addMonitoredRoom(roomId) {
     const id = String(roomId);
     if (!this.monitoredRooms.has(id)) {
-      this.monitoredRooms.add(id);
+      this.monitoredRooms.set(id, { paused: false, addedAt: Date.now() });
       this.saveMonitoredRooms();
       await this.ensureConnection(id);
       return true;
@@ -73,6 +88,53 @@ class RoomManager {
     }
     return false;
   }
+  
+  async pauseRoom(roomId) {
+    const id = String(roomId);
+    const config = this.monitoredRooms.get(id);
+    if (config) {
+      config.paused = true;
+      this.monitoredRooms.set(id, config);
+      this.saveMonitoredRooms();
+      this.checkDisconnect(id); // Will disconnect if no clients
+      return true;
+    }
+    return false;
+  }
+
+  async resumeRoom(roomId) {
+    const id = String(roomId);
+    const config = this.monitoredRooms.get(id);
+    if (config) {
+      config.paused = false;
+      this.monitoredRooms.set(id, config);
+      this.saveMonitoredRooms();
+      await this.ensureConnection(id);
+      return true;
+    }
+    return false;
+  }
+
+  updateRoomInfo(roomId, info) {
+    const id = String(roomId);
+    const config = this.monitoredRooms.get(id);
+    if (config) {
+      let changed = false;
+      if (info.uname && config.uname !== info.uname) {
+        config.uname = info.uname;
+        changed = true;
+      }
+      if (info.face && config.face !== info.face) {
+        config.face = info.face;
+        changed = true;
+      }
+      
+      if (changed) {
+        this.monitoredRooms.set(id, config);
+        this.saveMonitoredRooms();
+      }
+    }
+  }
 
   async ensureConnection(roomId) {
     const id = String(roomId);
@@ -91,6 +153,15 @@ class RoomManager {
         await liveWS.connect();
         // 连接成功后立即获取直播状态，以初始化 currentSessionId (用于历史记录)
         await liveWS.getLiveStatus();
+        
+        // 获取并缓存主播信息（头像、昵称）
+        const roomInfo = await liveWS.getRoomInfo();
+        if (roomInfo) {
+          this.updateRoomInfo(id, {
+            uname: roomInfo.anchorName,
+            face: roomInfo.anchorFace
+          });
+        }
       } catch (error) {
         console.error(`Failed to connect to room ${id}:`, error);
         // Don't delete immediately, maybe retry later? 
@@ -118,11 +189,15 @@ class RoomManager {
     liveWS.onConnect = () => broadcast({ type: 'system', message: '直播间连接成功' });
     liveWS.onClose = () => {
       broadcast({ type: 'system', message: '直播间连接已关闭' });
-      // If it closed unexpectedly and is monitored, we might want to reconnect
-      if (this.monitoredRooms.has(roomId)) {
+      
+      // If it closed unexpectedly and is monitored AND NOT PAUSED, we might want to reconnect
+      const config = this.monitoredRooms.get(roomId);
+      if (config && !config.paused) {
         console.log(`⚠️ Monitored room ${roomId} disconnected. Reconnecting in 5s...`);
         setTimeout(() => {
-          if (this.connections.has(roomId)) {
+          // Check again if still monitored and not paused
+          const currentConfig = this.monitoredRooms.get(roomId);
+          if (currentConfig && !currentConfig.paused && this.connections.has(roomId)) {
              this.connections.get(roomId).connect();
           }
         }, 5000);
@@ -146,9 +221,10 @@ class RoomManager {
 
   checkDisconnect(roomId) {
     const id = String(roomId);
+    const config = this.monitoredRooms.get(id);
     
-    // If monitored, never disconnect
-    if (this.monitoredRooms.has(id)) {
+    // If monitored AND NOT PAUSED, never disconnect
+    if (config && !config.paused) {
       return;
     }
 
@@ -164,7 +240,7 @@ class RoomManager {
     }
 
     if (!hasClients) {
-      console.log(`🔌 No clients and not monitored. Disconnecting room ${id}`);
+      console.log(`🔌 No clients and not monitored (or paused). Disconnecting room ${id}`);
       const liveWS = this.connections.get(id);
       if (liveWS) {
         liveWS.disconnect();
@@ -176,8 +252,10 @@ class RoomManager {
   // Initialize all monitored rooms on startup
   async init() {
     console.log('🚀 Initializing monitored rooms...');
-    for (const roomId of this.monitoredRooms) {
-      await this.ensureConnection(roomId);
+    for (const [roomId, config] of this.monitoredRooms) {
+      if (!config.paused) {
+        await this.ensureConnection(roomId);
+      }
     }
   }
 }

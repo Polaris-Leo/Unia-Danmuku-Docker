@@ -26,6 +26,9 @@ export class BilibiliLiveWS {
     this.rateLimitCD = 5 * 60 * 1000;  // CD时间：5分钟
     
     this.currentSessionId = null; // 当前直播场次ID (开播时间戳)
+    this.lastSessionId = null;    // 上一次直播场次ID
+    this.lastSessionEndTime = 0;  // 上一次直播结束(或最后活跃)时间
+    this.sessionTimeout = 15 * 60 * 1000; // 会话延续阈值：15分钟
 
     // 事件回调
     this.onDanmaku = null;      // 弹幕消息
@@ -66,7 +69,22 @@ export class BilibiliLiveWS {
         
         // 更新当前会话ID
         if (data.live_status === 1) {
-          this.currentSessionId = data.live_time;
+          const newSessionId = data.live_time;
+          const now = Date.now();
+
+          // 检查是否可以延续上一场直播 (断流重连逻辑)
+          // 如果有上一场记录，且间隔小于阈值(15分钟)
+          if (this.lastSessionId && (now - this.lastSessionEndTime < this.sessionTimeout)) {
+            console.log(`🔄 延续上一场直播会话: ${this.lastSessionId} (间隔: ${Math.floor((now - this.lastSessionEndTime)/1000)}秒)`);
+            this.currentSessionId = this.lastSessionId;
+          } else {
+            // 新的直播场次
+            this.currentSessionId = newSessionId;
+            this.lastSessionId = newSessionId;
+          }
+          
+          // 更新最后活跃时间
+          this.lastSessionEndTime = now;
         } else {
           this.currentSessionId = null;
         }
@@ -462,6 +480,11 @@ export class BilibiliLiveWS {
         // 心跳包发送空Buffer
         const packet = this.createPacket(Buffer.alloc(0), 2);
         this.ws.send(packet);
+
+        // 如果当前正在直播，更新最后活跃时间
+        if (this.currentSessionId) {
+          this.lastSessionEndTime = Date.now();
+        }
       }
     }, 30000); // 30秒一次
   }
@@ -601,6 +624,21 @@ export class BilibiliLiveWS {
     console.log('📨 收到消息:', cmd);
     
     switch (cmd) {
+      case 'PREPARING': // 直播准备中（下播）
+        console.log('💤 直播准备中 (PREPARING)');
+        this.currentSessionId = null;
+        // lastSessionEndTime 已经在心跳或消息处理中更新了，这里不需要重置
+        if (this.onLiveStatus) this.onLiveStatus({ liveStatus: 0 });
+        break;
+
+      case 'LIVE': // 直播开始
+        console.log('▶️ 直播开始 (LIVE)');
+        // 获取新的直播状态和时间，getLiveStatus 内部会处理会话延续逻辑
+        this.getLiveStatus().then(status => {
+             if (this.onLiveStatus) this.onLiveStatus(status);
+        });
+        break;
+
       case 'DANMU_MSG': // 弹幕
         const info = data.info;
         
@@ -694,13 +732,15 @@ export class BilibiliLiveWS {
         const basicIcon = giftData.gift_icon || 
                          (giftData.batch_combo_send && giftData.batch_combo_send.gift_icon) ||
                          (giftData.blind_gift && giftData.blind_gift.original_gift_icon) ||
+                         giftData.img_basic || 
+                         giftData.gift_def_img ||
                          giftData.tag_image;
 
         // 尝试获取更具体的动静资源
         // 如果有 gift_info，优先用里面的 webp 做动态图，img_basic 做静态图
         // 否则回退到 basicIcon
-        let iconDynamic = (giftData.gift_info && giftData.gift_info.webp) || basicIcon;
-        let iconStatic = (giftData.gift_info && giftData.gift_info.img_basic) || basicIcon;
+        let iconDynamic = (giftData.gift_info && giftData.gift_info.webp) || giftData.webp || basicIcon;
+        let iconStatic = (giftData.gift_info && giftData.gift_info.img_basic) || giftData.img_basic || basicIcon;
 
         // 确保图标链接是 HTTPS
         if (iconDynamic && iconDynamic.startsWith('http://')) {
@@ -734,7 +774,7 @@ export class BilibiliLiveWS {
           price: giftData.price,
           coinType: giftData.coin_type,
           totalCoin: giftData.total_coin,
-          timestamp: giftData.timestamp
+          timestamp: giftData.timestamp || Math.floor(Date.now() / 1000)
         };
         
         // 保存到历史记录
@@ -761,7 +801,7 @@ export class BilibiliLiveWS {
           num: data.data.num,
           price: data.data.price,
           giftName: data.data.gift_name,
-          timestamp: data.data.start_time || Math.floor(Date.now() / 1000)
+          timestamp: Math.floor(Date.now() / 1000)
         };
         
         // 保存到历史记录

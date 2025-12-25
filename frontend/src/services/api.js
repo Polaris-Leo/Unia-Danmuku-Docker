@@ -67,4 +67,22 @@ export const removeMonitoredRoom = async (roomId) => {
   return response.data;
 };
 
+/**
+ * 暂停监控
+ * @param {string} roomId
+ */
+export const pauseMonitoredRoom = async (roomId) => {
+  const response = await api.post(`/monitor/rooms/${roomId}/pause`);
+  return response.data;
+};
+
+/**
+ * 恢复监控
+ * @param {string} roomId
+ */
+export const resumeMonitoredRoom = async (roomId) => {
+  const response = await api.post(`/monitor/rooms/${roomId}/resume`);
+  return response.data;
+};
+
 export default api;

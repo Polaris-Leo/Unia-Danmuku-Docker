@@ -8,22 +8,39 @@ router.get('/rooms', async (req, res) => {
   const roomIds = roomManager.getMonitoredRooms();
   
   const rooms = await Promise.all(roomIds.map(async (roomId) => {
+    const config = roomManager.getRoomConfig(roomId);
     const conn = roomManager.connections.get(roomId);
+    
     let info = {
       roomId,
       connected: conn ? conn.isConnected : false,
-      addedAt: Date.now(), // Placeholder
-      title: '',
-      uname: ''
+      paused: config ? config.paused : false,
+      addedAt: config ? config.addedAt : 0,
+      uname: config?.uname || '加载中...',
+      face: config?.face || '',
+      liveStatus: 0 // 0: offline, 1: live, 2: round
     };
 
     if (conn) {
       try {
-        // Try to get room info if available
-        const roomInfo = await conn.getRoomInfo();
-        if (roomInfo) {
-            info.title = roomInfo.title;
-            info.uname = roomInfo.uname;
+        // 如果缓存中没有信息，才尝试主动获取
+        if (!info.uname || info.uname === '加载中...' || !info.face) {
+            const roomInfo = await conn.getRoomInfo();
+            if (roomInfo) {
+                info.uname = roomInfo.anchorName;
+                info.face = roomInfo.anchorFace;
+                
+                // Update cache
+                roomManager.updateRoomInfo(roomId, {
+                    uname: roomInfo.anchorName,
+                    face: roomInfo.anchorFace
+                });
+            }
+        }
+        
+        const status = await conn.getLiveStatus();
+        if (status) {
+            info.liveStatus = status.liveStatus;
         }
       } catch (e) {
         console.error(`Failed to get info for room ${roomId}:`, e.message);
@@ -33,6 +50,18 @@ router.get('/rooms', async (req, res) => {
   }));
 
   res.json({ success: true, rooms });
+});
+
+// Pause monitoring
+router.post('/rooms/:roomId/pause', async (req, res) => {
+  const success = await roomManager.pauseRoom(req.params.roomId);
+  res.json({ success });
+});
+
+// Resume monitoring
+router.post('/rooms/:roomId/resume', async (req, res) => {
+  const success = await roomManager.resumeRoom(req.params.roomId);
+  res.json({ success });
 });
 
 // Add a monitored room
