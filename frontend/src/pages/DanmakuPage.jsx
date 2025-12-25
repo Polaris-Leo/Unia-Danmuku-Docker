@@ -462,39 +462,57 @@ function DanmakuPage() {
               </div>
 
               {/* Guard Count */}
-              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>大航海</span>
+              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>大航海</span>
                 <NumberFlow 
                   value={guardCount} 
                   format={{ useGrouping: true }}
-                  style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', fontVariantNumeric: 'tabular-nums' }}
+                  style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 'bold', 
+                    color: '#333', 
+                    fontVariantNumeric: 'tabular-nums',
+                    '--number-flow-char-height': '14px',
+                  }}
                 />
               </div>
 
               {/* Fans Club / Popularity */}
-              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>粉丝团</span>
+              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>粉丝团</span>
                 <NumberFlow 
                   value={fansClubCount > 0 ? fansClubCount : followerCount} 
                   format={{ useGrouping: true }}
-                  style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', fontVariantNumeric: 'tabular-nums' }}
+                  style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 'bold', 
+                    color: '#333', 
+                    fontVariantNumeric: 'tabular-nums',
+                    '--number-flow-char-height': '14px',
+                  }}
                 />
               </div>
 
               {/* Rank Count */}
-              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>高能榜</span>
+              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>高能榜</span>
                 <NumberFlow 
                   value={rankCount} 
                   format={{ useGrouping: true }}
-                  style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', fontVariantNumeric: 'tabular-nums' }}
+                  style={{ 
+                    fontSize: '14px', 
+                    fontWeight: 'bold', 
+                    color: '#333', 
+                    fontVariantNumeric: 'tabular-nums',
+                    '--number-flow-char-height': '14px',
+                  }}
                 />
               </div>
 
               {/* Live Duration */}
-              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
-                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>时长</span>
-                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>{liveDuration}</span>
+              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>时长</span>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', lineHeight: '14px' }}>{liveDuration}</span>
               </div>
               
               {/* Ticker Placeholder (Optional, based on image) */}
