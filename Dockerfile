@@ -36,11 +36,6 @@ ENV NODE_ENV=production PORT=3000
 # 暴露端口
 EXPOSE 3000
 
-# 使用非 root 用户
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001 && \
-    chown -R nodejs:nodejs /app
-USER nodejs
-
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
