@@ -1,67 +1,260 @@
-/* OBS 弹幕页面 - 气泡样式（参考 LAPLACE Chat） */
-@import url('https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+/* 
+ * OBS 弹幕页面 - 简洁样式
+ * 
+ * 自定义样式变量说明：
+ * --username-font-family: 用户名字体
+ * --username-font-size: 用户名字号
+ * --username-font-weight: 用户名粗细 (normal, bold, 100-900)
+ * --username-color: 用户名颜色
+ * --username-stroke-width: 用户名描边宽度
+ * --username-stroke-color: 用户名描边颜色
+ * 
+ * --danmaku-font-family: 弹幕字体
+ * --danmaku-font-size: 弹幕字号
+ * --danmaku-font-weight: 弹幕粗细
+ * --danmaku-color: 弹幕颜色
+ * --danmaku-stroke-width: 弹幕描边宽度
+ * --danmaku-stroke-color: 弹幕描边颜色
+ * 
+ * --avatar-size: 头像大小
+ * --item-spacing: 弹幕项间距
+ */
 
-/* 全局透明背景 - 强制覆盖 */
+/* 透明背景 */
 html, body {
   margin: 0;
   padding: 0;
   background: transparent !important;
-  background-color: transparent !important;
+  
+  /* 优化字体渲染，提升OBS中的清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-.obs-danmaku-page {
-  width: 100vw;
-  height: 100vh;
-  background-color: transparent;
-  overflow: hidden;
+/* SC倒计时栏 */
+.sc-timer-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  gap: 24px;
+  padding: 24px 40px;
+  background: transparent;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+  overflow-x: auto;
+  overflow-y: visible;
+  flex-wrap: nowrap;
 }
 
-/* 事件列表包装器 */
-.events-list-wrap {
-  width: 100%;
-  height: 100%;
-}
-
-/* 事件列表容器 - 渐变淡出效果 */
-.event-list {
-  --offset: 30px;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 20px;
-  -webkit-mask-image: linear-gradient(
-    to bottom, 
-    rgba(0, 0, 0, 0), 
-    rgba(0, 0, 0, 1) var(--offset), 
-    rgba(0, 0, 0, 1) calc(100% - var(--offset)), 
-    rgba(0, 0, 0, 0)
-  );
-  mask-image: linear-gradient(
-    to bottom, 
-    rgba(0, 0, 0, 0), 
-    rgba(0, 0, 0, 1) var(--offset), 
-    rgba(0, 0, 0, 1) calc(100% - var(--offset)), 
-    rgba(0, 0, 0, 0)
-  );
-}
-
-/* 隐藏滚动条 */
-.event-list::-webkit-scrollbar {
+.sc-timer-bar::-webkit-scrollbar {
+  height: 0;
   display: none;
 }
 
-/* 全局事件变量 */
-.event {
-  --event-font-family: 'Jost', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --1px: 1px;
-  --event-line-height: 1.5em;
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* SC倒计时胶囊 */
+.sc-timer-capsule {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 32px 12px 12px;
+  border-radius: 100px;
+  overflow: hidden;
+  background: linear-gradient(
+    to left,
+    var(--sc-bg) 0%,
+    var(--sc-bg) var(--progress),
+    var(--sc-bg-light) var(--progress),
+    var(--sc-bg-light) 100%
+  );
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  animation: capsuleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: background 0.3s linear;
+  flex-shrink: 0;
+}
+
+@keyframes capsuleIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* SC倒计时头像 */
+.sc-timer-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 4px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.sc-timer-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* SC倒计时金额 */
+.sc-timer-price {
+  font-size: 32px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 
+    -4px -4px 0 rgba(0, 0, 0, 0.8),
+    4px -4px 0 rgba(0, 0, 0, 0.8),
+    -4px 4px 0 rgba(0, 0, 0, 0.8),
+    4px 4px 0 rgba(0, 0, 0, 0.8),
+    0 6px 10px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+/* SC倒计时时间 */
+.sc-timer-time {
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 
+    -4px -4px 0 rgba(0, 0, 0, 0.8),
+    4px -4px 0 rgba(0, 0, 0, 0.8),
+    -4px 4px 0 rgba(0, 0, 0, 0.8),
+    4px 4px 0 rgba(0, 0, 0, 0.8),
+    0 6px 10px rgba(0, 0, 0, 0.5);
+  font-variant-numeric: tabular-nums;
+  min-width: 120px;
+  text-align: center;
+}
+
+
+/* 根容器 */
+.obs-danmaku-simple {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: transparent;
   
+  /* 强制使用高质量渲染 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* 使用全局CSS变量 */
+:root {
+  /* 默认样式变量 - 用户名 */
+  --username-font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  --username-font-size: 16px;
+  --username-font-weight: bold;
+  --username-color: #333333;
+  --username-color-guard1: #ff1a75; /* 总督 */
+  --username-color-guard2: #9b39f4; /* 提督 */
+  --username-color-guard3: #1fa3f1; /* 舰长 */
+  --username-stroke-width: 2px;
+  --username-stroke-width-neg: -2px;
+  --username-stroke-color: #ffffff;
+  --username-enhanced-stroke: 1; /* 是否启用增强描边 */
+  --username-glow-intensity: 8px; /* 外发光强度 */
+  --username-shadow-intensity: 6px; /* 阴影强度 */
+  
+  /* 默认样式变量 - 弹幕内容 */
+  --danmaku-font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  --danmaku-font-size: 18px;
+  --danmaku-font-weight: normal;
+  --danmaku-color: #333333;
+  --danmaku-stroke-width: 2px;
+  --danmaku-stroke-width-neg: -2px;
+  --danmaku-stroke-color: #ffffff;
+  --danmaku-enhanced-stroke: 1; /* 是否启用增强描边 */
+  --danmaku-glow-intensity: 8px; /* 外发光强度 */
+  --danmaku-shadow-intensity: 6px; /* 阴影强度 */
+  
+  /* 默认样式变量 - 布局 */
+  --avatar-size: 48px;
+  --item-spacing: 12px;
+  --emot-size: 28px;
+
+  /* 预定义平滑描边阴影 (模拟4px描边) */
+  --smooth-stroke-shadow: 
+    /* 内层 (1.5px) */
+    1.5px 0 0 var(--username-stroke-color),
+    -1.5px 0 0 var(--username-stroke-color),
+    0 1.5px 0 var(--username-stroke-color),
+    0 -1.5px 0 var(--username-stroke-color),
+    1px 1px 0 var(--username-stroke-color),
+    -1px 1px 0 var(--username-stroke-color),
+    1px -1px 0 var(--username-stroke-color),
+    -1px -1px 0 var(--username-stroke-color),
+    /* 中层 (3px) */
+    3px 0 0 var(--username-stroke-color),
+    -3px 0 0 var(--username-stroke-color),
+    0 3px 0 var(--username-stroke-color),
+    0 -3px 0 var(--username-stroke-color),
+    2px 2px 0 var(--username-stroke-color),
+    -2px 2px 0 var(--username-stroke-color),
+    2px -2px 0 var(--username-stroke-color),
+    -2px -2px 0 var(--username-stroke-color),
+    /* 外层 (4px) - 补充圆角 */
+    3.5px 1.5px 0 var(--username-stroke-color),
+    -3.5px 1.5px 0 var(--username-stroke-color),
+    3.5px -1.5px 0 var(--username-stroke-color),
+    -3.5px -1.5px 0 var(--username-stroke-color),
+    1.5px 3.5px 0 var(--username-stroke-color),
+    -1.5px 3.5px 0 var(--username-stroke-color),
+    1.5px -3.5px 0 var(--username-stroke-color),
+    -1.5px -3.5px 0 var(--username-stroke-color),
+    /* 投影 */
+    0 4px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* 弹幕列表 */
+.danmaku-list {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 有SC倒计时时，裁剪顶部160px */
+.has-sc-timer .danmaku-list {
+  clip-path: inset(160px 0 0 0);
+}
+
+/* 隐藏滚动条 */
+.danmaku-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* 弹幕项 */
+.danmaku-item {
   display: flex;
   align-items: flex-start;
-  margin-bottom: 16px;
-  font-family: var(--event-font-family);
+  margin-bottom: var(--item-spacing);
   animation: slideIn 0.3s ease-out;
-  transition: 0.4s color ease, 0.4s background-color ease;
 }
 
 @keyframes slideIn {
@@ -75,16 +268,15 @@ html, body {
   }
 }
 
-/* 头像容器 */
-.avatar-wrap {
-  position: relative;
-  width: var(--avatar-size, 48px);
-  height: var(--avatar-size, 48px);
+/* 头像 */
+.danmaku-item .avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
   flex-shrink: 0;
-  margin-right: 8px;
+  margin-right: 12px;
 }
 
-.avatar {
+.danmaku-item .avatar img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -93,215 +285,224 @@ html, body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* 内容包装容器 */
-.content-wrap {
+/* 内容区 */
+.content-area {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-width: 0;
 }
 
-/* 用户信息行（粉丝牌+用户名） */
-.user-info-line {
+/* 用户名行（包含舰长图标） */
+.username-line {
   display: flex;
   align-items: center;
   gap: 6px;
   margin-bottom: 4px;
 }
 
-/* 粉丝勋章 */
-.fans-medal {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #b8a5d6, #9d88c4);
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  white-space: nowrap;
-}
-
-/* 舰长勋章样式 */
-.fans-medal.guard-1 {
-  background: linear-gradient(135deg, #ff6699, #ff4d88);
-}
-
-.fans-medal.guard-2 {
-  background: linear-gradient(135deg, #9b39f4, #8530e0);
-}
-
-.fans-medal.guard-3 {
-  background: linear-gradient(135deg, #1fa3f1, #1890d5);
-}
-
-.fans-medal .medal-name {
-  margin-right: 4px;
-}
-
-.fans-medal .medal-level {
-  font-weight: bold;
-}
-
 /* 舰长图标 */
-.guard-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-right: 4px;
+.username-line .guard-icon {
+  height: var(--username-font-size) !important;
+  width: auto !important;
   flex-shrink: 0;
+  vertical-align: middle;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
 }
 
-.guard-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-/* 用户名 */
-
+/* 用户名样式 */
 .username {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--username-color, #333);
-  text-shadow: 
-    0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 2px rgba(255, 255, 255, 0.95),
-    0 0 2px rgba(255, 255, 255, 0.95);
+  font-family: var(--username-font-family);
+  font-size: var(--username-font-size);
+  font-weight: var(--username-font-weight);
+  color: var(--username-color);
+  margin-left: 0.3em;
+  
+  /* 使用多重阴影模拟平滑描边，解决折角问题且保证兼容性 */
+  text-shadow: var(--smooth-stroke-shadow);
 }
 
-.event--message.guard-level--1 .username {
-  color: var(--username-color-guard1, #ff1a75);
-}
-.event--message.guard-level--2 .username {
-  color: var(--username-color-guard2, #9b39f4);
-}
-.event--message.guard-level--3 .username {
-  color: var(--username-color-guard3, #1fa3f1);
+/* 舰长用户名 */
+.username.guard-3 {
+  color: var(--username-color-guard3);
 }
 
-
-
-/* 弹幕自定义样式 */
-.event--message {
-  --text: rgb(110, 62, 87);
-  --bg: rgb(244, 222, 232);
+/* 提督用户名 */
+.username.guard-2 {
+  color: var(--username-color-guard2);
 }
 
-/* 总督变量 */
-.event--message.guard-level--1 {
-  --text: rgb(61, 24, 23);
-  --bg: rgb(253, 213, 186);
+/* 总督用户名 */
+.username.guard-1 {
+  color: var(--username-color-guard1);
 }
 
-/* 提督变量 */
-.event--message.guard-level--2 {
-  --text: rgb(75, 29, 95);
-  --bg: rgb(217, 204, 240);
-}
-
-/* 舰长变量 */
-.event--message.guard-level--3 {
-  --text: rgb(26, 24, 85);
-  --bg: rgb(200, 221, 252);
-}
-
-/* 弹幕正文改为聊天泡泡样式 */
-.event--message .message {
-  --margin-top: 0;
-  position: relative;
-  display: block;
-  margin-top: calc(var(--1px) * var(--margin-top));
-  padding: calc(var(--1px) * 8) calc(var(--1px) * 14);
-  color: var(--text);
-  background-color: var(--bg);
-  width: fit-content;
-  min-width: 3em;
-  max-width: calc(100vw - 120px);
-  border-radius: calc(var(--1px) * 18);
-  filter: drop-shadow(0 0 1px currentColor);
-  font-weight: bold;
-  font-size: 16px;
-  line-height: var(--event-line-height);
+/* 弹幕内容样式 */
+.danmaku-text {
+  font-family: var(--danmaku-font-family);
+  font-size: var(--danmaku-font-size);
+  font-weight: var(--danmaku-font-weight);
+  color: var(--danmaku-color);
+  line-height: 1.5;
   word-wrap: break-word;
-}
-
-/* 去掉大表情消息边框 */
-.event--message.has-emotes .message {
-  background-color: transparent;
-  padding: 0;
-  filter: none;
-}
-
-/* 为聊天泡泡增加尾巴 */
-.events-list-wrap .event--message:not(.has-emotes) .message::before {
-  content: "";
-  display: inline-block;
-  position: absolute;
-  top: calc(var(--1px) * -5);
-  left: calc(var(--1px) * -12);
-  border: calc(var(--1px) * 10) solid transparent;
-  border-right: calc(var(--1px) * 18) solid var(--bg);
-  transform: rotate(40deg);
+  margin-left: 0.5em;
+  
+  /* 使用多重阴影模拟平滑描边 */
+  text-shadow: var(--smooth-stroke-shadow);
 }
 
 /* 表情图片 */
-.emote {
-  vertical-align: middle;
+.danmaku-emot {
   display: inline-block;
+  height: var(--emot-size);
+  max-height: var(--emot-size);
+  vertical-align: middle;
   margin: 0 2px;
 }
 
-/* 小表情（B站emoji）- 与文字同高 */
-.emote-small {
-  height: 1.2em;
-  width: auto;
-  max-width: auto;
+/* SC（醒目留言）样式 */
+.sc-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--item-spacing);
+  border-radius: 50px;
+  overflow: hidden;
+  animation: scSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
-/* 大表情（房间表情包、大表情）- 使用设置的表情大小 */
-.emote-large {
-  height: var(--emot-size, 28px);
-  max-height: var(--emot-size, 28px);
-  width: auto;
-}
-
-/* 纯表情消息中的表情更大 */
-.has-emotes .emote-large {
-  height: calc(var(--emot-size, 28px) * 1.5);
-  max-height: calc(var(--emot-size, 28px) * 1.5);
-}
-
-/* 响应式调整 */
-@media (max-width: 1280px) {
-  .event--message .message {
-    font-size: 15px;
-    max-width: calc(100vw - 100px);
+@keyframes scSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
   }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* SC上栏（头像、用户名、金额） */
+.sc-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 28px;
+  background: var(--sc-bg, #7497ED);
+  gap: 12px;
+  position: relative;
+}
+
+.sc-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.sc-avatar {
+  width: calc(var(--username-font-size) * 2.5);
+  height: calc(var(--username-font-size) * 2.5);
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.sc-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sc-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sc-username {
+  font-family: var(--username-font-family);
+  font-size: var(--username-font-size);
+  font-weight: var(--username-font-weight);
+  color: #8836d3;
   
-  .username {
-    font-size: 13px;
-  }
+  /* 使用多重阴影模拟平滑描边 */
+  text-shadow: var(--smooth-stroke-shadow);
+  
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-@media (max-width: 768px) {
-  .avatar-wrap {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .event--message .message {
-    font-size: 14px;
-    --margin-left: 24;
-    max-width: calc(100vw - 80px);
-  }
-  
-  .username {
-    left: 44px;
-    font-size: 12px;
-  }
+.sc-price {
+  font-size: calc(var(--username-font-size) * 1.2);
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.4),
+    0 0 10px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
 }
+
+/* SC下栏（消息内容） */
+.sc-content {
+  padding: 15px 28px;
+  background: var(--sc-bg-light, #8AAAF2);
+  color: #6e46ff;
+  font-family: var(--danmaku-font-family);
+  font-size: var(--danmaku-font-size);
+  font-weight: var(--danmaku-font-weight);
+  line-height: 1.6;
+  word-wrap: break-word;
+  
+  /* 使用多重阴影模拟平滑描边 */
+  text-shadow: var(--smooth-stroke-shadow);
+  
+  min-height: 50px;
+}
+
+/* ===== 样式自定义示例 ===== */
+
+/* 
+示例1: 修改用户名为红色粗体，白色描边
+.obs-danmaku-simple {
+  --username-color: #ff0000;
+  --username-font-weight: bold;
+  --username-stroke-color: #ffffff;
+  --username-stroke-width: 2px;
+}
+*/
+
+/* 
+示例2: 修改弹幕为蓝色，黄色描边，加粗
+.obs-danmaku-simple {
+  --danmaku-color: #0066ff;
+  --danmaku-font-weight: bold;
+  --danmaku-stroke-color: #ffff00;
+  --danmaku-stroke-width: 3px;
+}
+*/
+
+/* 
+示例3: 修改字体
+.obs-danmaku-simple {
+  --username-font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+  --danmaku-font-family: 'Comic Sans MS', 'SimHei', sans-serif;
+}
+*/
+
+/* 
+示例4: 调整大小和间距
+.obs-danmaku-simple {
+  --username-font-size: 20px;
+  --danmaku-font-size: 22px;
+  --avatar-size: 60px;
+  --item-spacing: 16px;
+}
+*/

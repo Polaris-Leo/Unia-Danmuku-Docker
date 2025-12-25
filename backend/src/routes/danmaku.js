@@ -2,6 +2,7 @@ import express from 'express';
 import { WebSocketServer } from 'ws';
 import { BilibiliLiveWS } from '../services/bilibiliLiveWS.js';
 import { loadCookies } from '../utils/cookieStorage.js';
+import { loadHistory } from '../utils/historyStorage.js';
 
 const router = express.Router();
 
@@ -128,6 +129,24 @@ export function createDanmakuWSS(server) {
       liveWS.onWelcome = (welcome) => {
         broadcastToRoom(roomId, welcome);
       };
+
+      liveWS.onWatched = (watched) => {
+        broadcastToRoom(roomId, watched);
+      };
+
+      liveWS.onRankCount = (rankData) => {
+        broadcastToRoom(roomId, {
+          type: 'rank',
+          num: rankData.count
+        });
+      };
+
+      liveWS.onLiveStatus = (status) => {
+        broadcastToRoom(roomId, {
+          type: 'live_status',
+          ...status
+        });
+      };
       
       liveWS.onPopularity = (popularity) => {
         broadcastToRoom(roomId, {
@@ -194,6 +213,48 @@ export function createDanmakuWSS(server) {
           type: 'error',
           message: '连接直播间失败: ' + err.message
         }));
+      });
+    }
+
+    // 如果已有连接（或刚创建），立即发送当前的直播状态和高能榜
+    if (liveWS) {
+      liveWS.getLiveStatus().then(async (status) => {
+        if (status) {
+          ws.send(JSON.stringify({
+            type: 'live_status',
+            ...status
+          }));
+
+          // 如果正在直播，加载并发送历史记录
+          if (status.liveStatus === 1 && liveWS.currentSessionId) {
+            // 使用 liveWS.roomId (真实房间号) 而不是 URL 参数中的 roomId
+            const history = await loadHistory(liveWS.roomId, liveWS.currentSessionId);
+            if (history) {
+              ws.send(JSON.stringify({
+                type: 'history',
+                data: history
+              }));
+            }
+          }
+        }
+        // 获取高能榜 (依赖 getLiveStatus 获取的 anchorId)
+        return liveWS.getRankCount();
+      }).then(rankData => {
+        if (rankData) {
+          ws.send(JSON.stringify({
+            type: 'rank',
+            num: rankData.count
+          }));
+        }
+        // 获取直播间综合信息（主播名、舰长数等）
+        return liveWS.getRoomInfo();
+      }).then(roomInfo => {
+        if (roomInfo) {
+          ws.send(JSON.stringify({
+            type: 'room_info',
+            data: roomInfo
+          }));
+        }
       });
     }
     

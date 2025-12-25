@@ -7,6 +7,8 @@ function DashboardPage() {
   const navigate = useNavigate();
   const [authInfo, setAuthInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [roomId, setRoomId] = useState(localStorage.getItem('lastRoomId') || '');
+  const [copyStatus, setCopyStatus] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -37,6 +39,28 @@ function DashboardPage() {
     }
   };
 
+  const handleEnterConsole = () => {
+    if (!roomId) {
+      alert('请输入直播间号');
+      return;
+    }
+    localStorage.setItem('lastRoomId', roomId);
+    navigate(`/danmaku?roomId=${roomId}`);
+  };
+
+  const handleCopyOBSLink = () => {
+    if (!roomId) {
+      alert('请输入直播间号');
+      return;
+    }
+    localStorage.setItem('lastRoomId', roomId);
+    const obsLink = `${window.location.origin}/obs?room=${roomId}`;
+    navigator.clipboard.writeText(obsLink).then(() => {
+      setCopyStatus('OBS链接已复制！');
+      setTimeout(() => setCopyStatus(''), 2000);
+    });
+  };
+
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -54,6 +78,30 @@ function DashboardPage() {
         </div>
 
         <div className="dashboard-content">
+          {/* Quick Start Section */}
+          <div className="quick-start-section">
+            <h3>🚀 快速启动</h3>
+            <div className="input-group">
+              <input
+                type="text"
+                className="room-input"
+                placeholder="输入直播间号"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleEnterConsole()}
+              />
+            </div>
+            <div className="button-group">
+              <button className="action-btn primary" onClick={handleEnterConsole}>
+                📺 进入控制台
+              </button>
+              <button className="action-btn secondary" onClick={handleCopyOBSLink}>
+                🔗 复制OBS链接
+              </button>
+            </div>
+            {copyStatus && <div className="status-msg success" style={{textAlign: 'center', marginTop: '10px', color: '#4caf50'}}>{copyStatus}</div>}
+          </div>
+
           <div className="info-section">
             <h3>✅ 登录状态</h3>
             <div className="info-item">
@@ -66,25 +114,16 @@ function DashboardPage() {
                   <span className="label">SESSDATA：</span>
                   <span className="value">{authInfo.cookies.SESSDATA}</span>
                 </div>
-                <div className="info-item">
-                  <span className="label">bili_jct：</span>
-                  <span className="value">{authInfo.cookies.bili_jct}</span>
-                </div>
               </>
             )}
           </div>
 
           <div className="features-section">
-            <h3>📋 功能列表</h3>
+            <h3>📋 其他功能</h3>
             <ul className="feature-list">
-              <li onClick={() => navigate('/danmaku')} style={{cursor: 'pointer'}}>
-                📺 实时弹幕接收 →
-              </li>
               <li onClick={() => navigate('/obs-settings')} style={{cursor: 'pointer'}}>
-                💬 OBS弹幕姬 →
+                ⚙️ OBS样式设置 →
               </li>
-              <li>👥 直播信息面板 (开发中)</li>
-              <li>🎯 更多功能敬请期待</li>
             </ul>
           </div>
 

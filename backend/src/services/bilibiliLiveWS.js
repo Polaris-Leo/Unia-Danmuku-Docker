@@ -5,6 +5,7 @@ import zlib from 'zlib';
 import fs from 'fs';
 import path from 'path';
 import { getCookieString } from '../utils/cookieStorage.js';
+import { saveMessage } from '../utils/historyStorage.js';
 
 /**
  * B站直播间弹幕WebSocket客户端
@@ -24,6 +25,8 @@ export class BilibiliLiveWS {
     this.rateLimitTime = null;   // 限速触发时间
     this.rateLimitCD = 5 * 60 * 1000;  // CD时间：5分钟
     
+    this.currentSessionId = null; // 当前直播场次ID (开播时间戳)
+
     // 事件回调
     this.onDanmaku = null;      // 弹幕消息
     this.onGift = null;          // 礼物消息
@@ -33,11 +36,140 @@ export class BilibiliLiveWS {
     this.onLike = null;          // 点赞消息
     this.onWatched = null;       // 看过人数
     this.onRankCount = null;     // 高能榜人数
+    this.onRoomInfo = null;      // 直播间信息（主播名、舰长数等）
     this.onEntry = null;         // 进场特效
     this.onPopularity = null;    // 人气值
+    this.onLiveStatus = null;    // 直播状态变化
     this.onError = null;         // 错误
     this.onConnect = null;       // 连接成功
     this.onClose = null;         // 连接关闭
+    this.anchorId = null;        // 主播UID
+  }
+
+  /**
+   * 获取直播间详细信息（包含开播状态和时间）
+   */
+  async getLiveStatus() {
+    try {
+      // 使用 room_init 接口获取更准确的信息（包括开播时间戳）
+      const response = await axios.get('https://api.live.bilibili.com/room/v1/Room/room_init', {
+        params: { id: this.roomId },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      if (response.data.code === 0) {
+        const data = response.data.data;
+        this.anchorId = data.uid; // 保存主播UID
+        this.roomId = data.room_id; // 更新为真实房间号
+        
+        // 更新当前会话ID
+        if (data.live_status === 1) {
+          this.currentSessionId = data.live_time;
+        } else {
+          this.currentSessionId = null;
+        }
+
+        return {
+          liveStatus: data.live_status, // 1: 直播中, 0: 未开播, 2: 轮播
+          liveStartTime: data.live_time, // Unix时间戳
+          title: '' // room_init 不返回标题，如果需要标题可能需要另外获取，但这里主要为了状态和时间
+        };
+      }
+    } catch (error) {
+      console.error('获取直播状态失败:', error.message);
+    }
+    return null;
+  }
+
+  /**
+   * 获取高能榜人数 (API方式)
+   */
+  async getRankCount() {
+    if (!this.anchorId) {
+      await this.getLiveStatus(); // 尝试获取主播ID
+    }
+    
+    if (!this.anchorId) return null;
+
+    try {
+      const response = await axios.get('https://api.live.bilibili.com/xlive/general-interface/v1/rank/getOnlineGoldRank', {
+        params: { 
+          roomId: this.roomId,
+          ruid: this.anchorId,
+          page: 1,
+          pageSize: 1
+        },
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+
+      if (response.data.code === 0 && response.data.data) {
+        return {
+          type: 'rank_count',
+          count: response.data.data.onlineNum
+        };
+      }
+    } catch (error) {
+      console.error('获取高能榜人数失败:', error.message);
+    }
+    return null;
+  }
+
+  /**
+   * 获取直播间综合信息（主播名、舰长数、粉丝团数等）
+   */
+  async getRoomInfo() {
+    if (!this.roomId) return null;
+
+    try {
+      const headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      };
+
+      // 添加Cookie以获取完整权限
+      if (this.cookies) {
+        const cookieStr = getCookieString(this.cookies);
+        headers['Cookie'] = cookieStr;
+      }
+
+      const response = await axios.get('https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom', {
+        params: { room_id: this.roomId },
+        headers
+      });
+
+      if (response.data.code === 0) {
+        const data = response.data.data;
+        const anchorInfo = data.anchor_info?.base_info || {};
+        const guardInfo = data.guard_info || {};
+        const medalInfo = data.anchor_info?.medal_info || {};
+        
+        let faceUrl = anchorInfo.face || '';
+        if (faceUrl && faceUrl.startsWith('http://')) {
+          faceUrl = faceUrl.replace('http://', 'https://');
+        }
+
+        console.log(`[RoomInfo] Fetched for ${this.roomId}: ${anchorInfo.uname}, Face: ${faceUrl}`);
+
+        // 尝试获取粉丝团人数
+        const fansClubCount = medalInfo.fansclub || 0;
+        const followerCount = data.anchor_info?.relation_info?.attention || 0;
+
+        return {
+          anchorName: anchorInfo.uname || '未知主播',
+          anchorFace: faceUrl,
+          guardCount: guardInfo.count || 0,
+          fansClubCount: fansClubCount,
+          followerCount: followerCount,
+          watchedCount: data.room_info?.online || 0
+        };
+      }
+    } catch (error) {
+      console.error('获取直播间信息失败:', error.message);
+    }
+    return null;
   }
 
   /**
@@ -523,40 +655,80 @@ export class BilibiliLiveWS {
           console.log('🎨 表情包:', Object.keys(danmaku.emots));
         }
         
+        // 保存到历史记录
+        if (this.currentSessionId) {
+          saveMessage(this.roomId, this.currentSessionId, 'danmaku', danmaku);
+        }
+
         if (this.onDanmaku) this.onDanmaku(danmaku);
         break;
         
       case 'SEND_GIFT': // 礼物
+        const giftData = data.data;
+        
+        // 基础图标（通常是静态）
+        const basicIcon = giftData.gift_icon || 
+                         (giftData.batch_combo_send && giftData.batch_combo_send.gift_icon) ||
+                         (giftData.blind_gift && giftData.blind_gift.original_gift_icon) ||
+                         giftData.tag_image;
+
+        // 尝试获取更具体的动静资源
+        // 如果有 gift_info，优先用里面的 webp 做动态图，img_basic 做静态图
+        // 否则回退到 basicIcon
+        const iconDynamic = (giftData.gift_info && giftData.gift_info.webp) || basicIcon;
+        const iconStatic = (giftData.gift_info && giftData.gift_info.img_basic) || basicIcon;
+
+        console.log(`🎁 收到礼物: ${giftData.giftName} (ID: ${giftData.giftId}, 价格: ${giftData.price})`);
+        
         const gift = {
           type: 'gift',
           user: {
-            uid: data.data.uid,
-            username: data.data.uname,
-            face: data.data.face
+            uid: giftData.uid,
+            username: giftData.uname,
+            face: giftData.face
           },
-          giftName: data.data.giftName,
-          giftId: data.data.giftId,
-          num: data.data.num,
-          price: data.data.price,
-          coinType: data.data.coin_type,
-          totalCoin: data.data.total_coin,
-          timestamp: data.data.timestamp
+          giftName: giftData.giftName,
+          giftId: giftData.giftId,
+          giftIcon: iconDynamic,       // 默认使用动态
+          giftIconStatic: iconStatic,  // 专用静态字段
+          giftIconDynamic: iconDynamic,// 专用动态字段
+          num: giftData.num,
+          price: giftData.price,
+          coinType: giftData.coin_type,
+          totalCoin: giftData.total_coin,
+          timestamp: giftData.timestamp
         };
+        
+        // 保存到历史记录
+        if (this.currentSessionId) {
+          saveMessage(this.roomId, this.currentSessionId, 'gift', gift);
+        }
+
         if (this.onGift) this.onGift(gift);
         break;
         
       case 'GUARD_BUY': // 上舰
+        const guardUid = data.data.uid;
+        const guardFace = await this.getUserFace(guardUid);
+        
         const guard = {
           type: 'guard',
           user: {
-            uid: data.data.uid,
-            username: data.data.username
+            uid: guardUid,
+            username: data.data.username,
+            face: guardFace
           },
           guardLevel: data.data.guard_level,
           num: data.data.num,
           price: data.data.price,
           giftName: data.data.gift_name
         };
+        
+        // 保存到历史记录
+        if (this.currentSessionId) {
+          saveMessage(this.roomId, this.currentSessionId, 'guard', guard);
+        }
+
         if (this.onGuard) this.onGuard(guard);
         break;
         
@@ -591,10 +763,16 @@ export class BilibiliLiveWS {
           },
           price: data.data.price,
           message: data.data.message,
-          time: data.data.time,
+          time: data.data.ts || data.data.start_time || Math.floor(Date.now() / 1000),
           backgroundColor: data.data.background_bottom_color
         };
         console.log('💎 SC:', sc.user.username, '-', sc.price, '元 -', sc.message);
+        
+        // 保存到历史记录
+        if (this.currentSessionId) {
+          saveMessage(this.roomId, this.currentSessionId, 'superchat', sc);
+        }
+
         if (this.onSuperChat) this.onSuperChat(sc);
         break;
         
@@ -631,6 +809,27 @@ export class BilibiliLiveWS {
       case 'ONLINE_RANK_V3': // 高能榜V3
       case 'STOP_LIVE_ROOM_LIST': // 停播房间列表
         // 这些消息数据量大但用处不大，静默处理
+        break;
+
+      case 'LIVE': // 开播
+        console.log('📺 直播间已开播');
+        // 重新获取详细信息以获得准确的开播时间
+        setTimeout(async () => {
+          const status = await this.getLiveStatus();
+          if (status && this.onLiveStatus) {
+            this.onLiveStatus(status);
+          }
+        }, 2000); // 延迟2秒确保API已更新
+        break;
+
+      case 'PREPARING': // 下播
+        console.log('💤 直播间已下播');
+        if (this.onLiveStatus) {
+          this.onLiveStatus({
+            liveStatus: 0,
+            liveStartTime: 0
+          });
+        }
         break;
       
       default:

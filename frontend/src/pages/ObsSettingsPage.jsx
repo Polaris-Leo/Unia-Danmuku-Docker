@@ -7,7 +7,6 @@ const ObsSettingsPage = () => {
   
   // 默认设置
   const defaultSettings = {
-    styleType: 'simple', // 'bubble' 或 'simple'
     usernameFontFamily: 'Microsoft YaHei',
     usernameFontSize: 16,
     usernameFontWeight: 'bold',
@@ -152,24 +151,10 @@ const ObsSettingsPage = () => {
               placeholder="输入B站直播间号"
             />
           </div>
-
-          <div className="setting-item">
-            <label>弹幕样式：</label>
-            <select
-              value={settings.styleType}
-              onChange={(e) => setSettings({ ...settings, styleType: e.target.value })}
-            >
-              <option value="simple">简洁样式（推荐）</option>
-              <option value="bubble">气泡样式</option>
-            </select>
-          </div>
         </div>
 
-        {/* 只有简洁样式才显示详细设置 */}
-        {settings.styleType === 'simple' && (
-          <>
-            {/* 用户名样式 */}
-            <div className="setting-section">
+        {/* 用户名样式 */}
+        <div className="setting-section">
               <h2>用户名样式</h2>
               
               <div className="setting-item">
@@ -491,8 +476,6 @@ const ObsSettingsPage = () => {
                 <span className="unit">px</span>
               </div>
             </div>
-          </>
-        )}
 
         {/* 操作按钮 */}
         <div className="action-buttons">

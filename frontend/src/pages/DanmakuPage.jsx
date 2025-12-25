@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import NumberFlow from '@number-flow/react';
 import { getAuthStatus, logout } from '../services/api';
 import './DanmakuPage.css';
 
@@ -7,26 +8,193 @@ function DanmakuPage() {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState('');
   const [connected, setConnected] = useState(false);
-  const [messages, setMessages] = useState([]);
+  
+  // Lists for different columns
+  const [danmakuList, setDanmakuList] = useState([]);
+  const [scList, setScList] = useState([]);
+  const [giftList, setGiftList] = useState([]);
+  
+  // Stats
   const [watchedCount, setWatchedCount] = useState(0);
   const [rankCount, setRankCount] = useState(0);
+  const [likeCount, setLikeCount] = useState(0);
+  const [anchorName, setAnchorName] = useState('Loading...');
+  const [anchorFace, setAnchorFace] = useState('');
+  const [guardCount, setGuardCount] = useState(0);
+  const [fansClubCount, setFansClubCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(0);
+  
+  // Live Status
+  const [liveStatus, setLiveStatus] = useState(0); // 0: Offline, 1: Live, 2: Round
+  const [liveStartTime, setLiveStartTime] = useState(0);
+  const [liveDuration, setLiveDuration] = useState('00:00:00');
+  
+  // Scroll State
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showNewMsgButton, setShowNewMsgButton] = useState(false);
+
+  // SC & Gift Scroll State
+  const [isScAutoScroll, setIsScAutoScroll] = useState(true);
+  const [isGiftAutoScroll, setIsGiftAutoScroll] = useState(true);
+  
   const wsRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const danmakuListRef = useRef(null); // Ref for the scroll container
+  const scListRef = useRef(null);
+  const giftListRef = useRef(null);
+  const danmakuEndRef = useRef(null);
+  const scEndRef = useRef(null);
+  const giftEndRef = useRef(null);
 
   useEffect(() => {
     checkAuth();
+    const savedRoomId = localStorage.getItem('lastRoomId');
+    if (savedRoomId) {
+      setRoomId(savedRoomId);
+    }
     return () => {
-      // 组件卸载时断开连接
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
   }, []);
 
+  // Live Duration Timer
   useEffect(() => {
-    // 自动滚动到底部
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    let timer;
+    if (liveStatus === 1 && liveStartTime > 0) {
+      const updateDuration = () => {
+        const now = Math.floor(Date.now() / 1000);
+        const diff = now - liveStartTime;
+        if (diff >= 0) {
+          const hours = Math.floor(diff / 3600);
+          const minutes = Math.floor((diff % 3600) / 60);
+          const seconds = diff % 60;
+          setLiveDuration(
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+          );
+        }
+      };
+      
+      updateDuration(); // Initial update
+      timer = setInterval(updateDuration, 1000);
+    } else {
+      setLiveDuration('00:00:00');
+    }
+    
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [liveStatus, liveStartTime]);
+
+  // Auto-scroll effects
+  useEffect(() => {
+    if (isAutoScroll) {
+      if (danmakuEndRef.current) {
+        // Use 'auto' behavior for instant scrolling to prevent lag with high message volume
+        danmakuEndRef.current.scrollIntoView({ behavior: 'auto' });
+      }
+    } else {
+      setUnreadCount(prev => prev + 1);
+      setShowNewMsgButton(true);
+    }
+  }, [danmakuList]);
+
+  // Handle scroll event
+  const handleScroll = (e) => {
+    if (!danmakuListRef.current) return;
+    
+    // Only check for manual scroll if it's a user-initiated scroll event
+    // We can infer this if the scroll happened while auto-scroll was ON, 
+    // but we are now NOT at the bottom.
+    
+    const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    
+    // If user manually scrolls up (deltaY < 0 usually, but here we check position)
+    // We need to be careful not to disable auto-scroll just because a new message arrived 
+    // and pushed the bottom down before the auto-scroll effect ran.
+    
+    // Strategy: Only disable auto-scroll if the user is significantly far from bottom
+    // AND we are not currently in the process of auto-scrolling (which is hard to track perfectly in React state).
+    // A better approach for "manual only":
+    // Use the `onWheel` or `onTouchMove` events to detect user interaction.
+  };
+
+  // Detect manual user interaction to pause auto-scroll
+  const handleUserScrollInteraction = () => {
+    const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    
+    if (!isAtBottom) {
+      setIsAutoScroll(false);
+    }
+  };
+
+  // Re-enable auto-scroll if user scrolls back to bottom manually
+  const handleScrollCheck = () => {
+     if (!danmakuListRef.current) return;
+     const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
+     const isAtBottom = scrollHeight - scrollTop - clientHeight < 20;
+     
+     if (isAtBottom) {
+       setIsAutoScroll(true);
+       setUnreadCount(0);
+       setShowNewMsgButton(false);
+     }
+  };
+
+  // SC Scroll Handlers
+  const handleScUserScrollInteraction = () => {
+    if (!scListRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scListRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    if (!isAtBottom) setIsScAutoScroll(false);
+  };
+
+  const handleScScrollCheck = () => {
+    if (!scListRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scListRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 20;
+    if (isAtBottom) setIsScAutoScroll(true);
+  };
+
+  // Gift Scroll Handlers
+  const handleGiftUserScrollInteraction = () => {
+    if (!giftListRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = giftListRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+    if (!isAtBottom) setIsGiftAutoScroll(false);
+  };
+
+  const handleGiftScrollCheck = () => {
+    if (!giftListRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = giftListRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 20;
+    if (isAtBottom) setIsGiftAutoScroll(true);
+  };
+
+  // Scroll to bottom manually
+  const scrollToBottom = () => {
+    setIsAutoScroll(true);
+    setUnreadCount(0);
+    setShowNewMsgButton(false);
+    if (danmakuEndRef.current) {
+      danmakuEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  };
+
+  useEffect(() => {
+    if (isScAutoScroll && scEndRef.current) {
+      scEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [scList, isScAutoScroll]);
+
+  useEffect(() => {
+    if (isGiftAutoScroll && giftEndRef.current) {
+      giftEndRef.current.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [giftList, isGiftAutoScroll]);
 
   const checkAuth = async () => {
     try {
@@ -40,39 +208,59 @@ function DanmakuPage() {
     }
   };
 
-  const connectRoom = () => {
-    if (!roomId) {
+  // Auto-connect if roomId is in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlRoomId = params.get('roomId');
+    
+    if (urlRoomId) {
+      setRoomId(urlRoomId);
+      connectRoom(urlRoomId);
+    }
+    // If no roomId in URL, do nothing (show empty frame)
+  }, []);
+
+  const connectRoom = (targetRoomId) => {
+    const idToUse = targetRoomId || roomId;
+    if (!idToUse) {
       alert('请输入直播间号');
       return;
     }
+
+    localStorage.setItem('lastRoomId', idToUse);
 
     if (wsRef.current) {
       wsRef.current.close();
     }
 
-    // 连接WebSocket
-    const ws = new WebSocket(`ws://localhost:3001/ws/danmaku?roomId=${roomId}`);
+    const ws = new WebSocket(`ws://localhost:3001/ws/danmaku?roomId=${idToUse}`);
     
     ws.onopen = () => {
       console.log('WebSocket连接成功');
       setConnected(true);
-      addSystemMessage('已连接到直播间');
+      // Clear lists on new connection
+      setDanmakuList([]);
+      setScList([]);
+      setGiftList([]);
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      handleMessage(data);
+      try {
+        const data = JSON.parse(event.data);
+        handleMessage(data);
+      } catch (e) {
+        console.error('Parse error', e);
+      }
     };
 
     ws.onerror = (error) => {
       console.error('WebSocket错误:', error);
-      addSystemMessage('连接错误', 'error');
+      setConnected(false);
     };
 
     ws.onclose = () => {
       console.log('WebSocket连接关闭');
       setConnected(false);
-      addSystemMessage('已断开连接');
     };
 
     wsRef.current = ws;
@@ -87,470 +275,539 @@ function DanmakuPage() {
   };
 
   const handleMessage = (data) => {
+    const msg = { ...data, id: Date.now() + Math.random() };
+    
     switch (data.type) {
       case 'danmaku':
+        setDanmakuList(prev => [...prev, msg].slice(-200));
+        break;
+      case 'superchat':
+        setScList(prev => [...prev, msg].slice(-100));
+        setDanmakuList(prev => [...prev, msg].slice(-200));
+        break;
       case 'gift':
       case 'guard':
-      case 'welcome':
-      case 'superchat':
-      case 'entry_effect':
-        addMessage(data);
+        setGiftList(prev => [...prev, msg].slice(-100));
+        setDanmakuList(prev => [...prev, msg].slice(-200));
         break;
       case 'watched':
         setWatchedCount(data.num || 0);
         break;
-      case 'rank_count':
-        setRankCount(data.count || 0);
+      case 'rank':
+        setRankCount(data.num || 0);
         break;
-      case 'system':
-        addSystemMessage(data.message);
+      case 'liked':
+        setLikeCount(data.num || 0);
         break;
-      case 'error':
-        addSystemMessage(data.message, 'error');
+      case 'live_status':
+        setLiveStatus(data.liveStatus);
+        setLiveStartTime(data.liveStartTime);
+        break;
+      case 'room_info':
+        console.log('Received room_info:', data.data);
+        setAnchorName(data.data.anchorName);
+        setAnchorFace(data.data.anchorFace);
+        setGuardCount(data.data.guardCount);
+        setFansClubCount(data.data.fansClubCount);
+        setFollowerCount(data.data.followerCount);
+        setWatchedCount(data.data.watchedCount);
+        break;
+      case 'history':
+        const historyDanmaku = (data.data.danmaku || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historySc = (data.data.superchat || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historyGift = (data.data.gift || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historyGuard = (data.data.guard || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+
+        setDanmakuList(historyDanmaku.slice(-200));
+        setScList(historySc.slice(-100));
+        setGiftList([...historyGift, ...historyGuard].slice(-100));
+        break;
+      default:
         break;
     }
   };
 
-  const addMessage = (data) => {
-    // 添加详细日志
-    if (data.type === 'danmaku') {
-      console.log('🔍 收到弹幕消息:', {
-        user: data.user?.username,
-        uid: data.user?.uid,
-        face: data.user?.face,
-        content: data.content,
-        emots: data.emots,
-        emotKeys: data.emots ? Object.keys(data.emots) : []
-      });
-    }
-    
-    const msg = {
-      id: Date.now() + Math.random(),
-      ...data,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setMessages(prev => [...prev.slice(-199), msg]); // 保留最新200条
-  };
-
-  const addSystemMessage = (content, level = 'info') => {
-    const msg = {
-      id: Date.now() + Math.random(),
-      type: 'system',
-      content,
-      level,
-      timestamp: new Date().toLocaleTimeString()
-    };
-    setMessages(prev => [...prev.slice(-199), msg]);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/');
-    } catch (error) {
-      console.error('退出登录失败:', error);
-    }
-  };
-
-  const clearMessages = () => {
-    setMessages([]);
-  };
-
-  // 渲染带表情的内容
+  // Helper: Render content with emojis
   const renderContentWithEmoji = (content, emots) => {
-    console.log('📄 renderContentWithEmoji called:', { content, emots });
-    
     if (!emots || Object.keys(emots).length === 0) {
-      console.log('  ⚠️  没有表情信息');
       return content;
     }
-    
-    console.log('  ✅ 找到表情:', Object.keys(emots));
-    
-    const parts = [];
-    let currentText = content;
-    let key = 0;
-    
-    // 找出所有表情的位置
-    const emotPositions = [];
-    Object.entries(emots).forEach(([emotText, emotInfo]) => {
-      let pos = 0;
-      while ((pos = currentText.indexOf(emotText, pos)) !== -1) {
-        emotPositions.push({
-          start: pos,
-          end: pos + emotText.length,
+
+    const emotMatches = [];
+    Object.keys(emots).forEach(emotText => {
+      let index = content.indexOf(emotText);
+      while (index !== -1) {
+        emotMatches.push({
           text: emotText,
-          info: emotInfo
+          start: index,
+          end: index + emotText.length,
+          info: emots[emotText]
         });
-        pos += emotText.length;
+        index = content.indexOf(emotText, index + 1);
       }
     });
-    
-    // 按位置排序
-    emotPositions.sort((a, b) => a.start - b.start);
-    
-    // 构建最终内容
-    let lastEnd = 0;
-    emotPositions.forEach((emot) => {
-      // 避免重叠
-      if (emot.start < lastEnd) return;
-      
-      // 添加表情前的文本
-      if (emot.start > lastEnd) {
-        parts.push(currentText.substring(lastEnd, emot.start));
-      }
-      
-      // 添加表情图片
-      // 根据表情类型判断是否限制高度：
-      // - B站小表情（如[dog]、[大笑]、[吃瓜]、[妙]、[热]）：height <= 30，限制为单行
-      // - 大表情（如[乐]、[摆]）：height > 30，保持原大小
-      // - 房间表情包（[[xxx]]）：不限制
-      const isRoomEmoji = emot.text.startsWith('[[');
-      const isSmallBiliEmoji = emot.info.height <= 30;  // B站小表情
-      const shouldLimit = !isRoomEmoji && isSmallBiliEmoji;
-      
-      parts.push(
-        <img 
-          key={`emot-${key++}`}
-          src={emot.info.url} 
-          alt={emot.text}
-          title={emot.text}
-          referrerPolicy="no-referrer"
-          style={{
-            height: shouldLimit ? '1.2em' : 'auto',
-            maxWidth: shouldLimit ? 'auto' : '60px',
-            maxHeight: shouldLimit ? '1.2em' : '60px',
-            width: 'auto',
-            verticalAlign: 'middle',
-            display: 'inline-block',
-            margin: '0 2px'
-          }}
-          onError={(e) => {
-            // 图片加载失败时显示原文本
-            e.target.style.display = 'none';
-            e.target.insertAdjacentText('afterend', emot.text);
-          }}
-        />
-      );
-      
-      lastEnd = emot.end;
-    });
-    
-    // 添加剩余文本
-    if (lastEnd < currentText.length) {
-      parts.push(currentText.substring(lastEnd));
+
+    if (emotMatches.length === 0) {
+      return content;
     }
-    
+
+    emotMatches.sort((a, b) => a.start - b.start);
+
+    const parts = [];
+    let lastEnd = 0;
+    let key = 0;
+
+    emotMatches.forEach(emot => {
+      if (emot.start >= lastEnd) {
+        if (emot.start > lastEnd) {
+          parts.push(content.substring(lastEnd, emot.start));
+        }
+
+        const isSmallBiliEmoji = emot.info.height <= 30;
+        const isRoomEmoji = emot.text.startsWith('[[');
+        const shouldLimit = !isRoomEmoji && isSmallBiliEmoji;
+
+        parts.push(
+          <img 
+            key={`emot-${key++}`}
+            src={emot.info.url} 
+            alt={emot.text}
+            title={emot.text}
+            referrerPolicy="no-referrer"
+            className={shouldLimit ? 'emote emote-small' : 'emote emote-large'}
+          />
+        );
+
+        lastEnd = emot.end;
+      }
+    });
+
+    if (lastEnd < content.length) {
+      parts.push(content.substring(lastEnd));
+    }
+
     return parts.length > 0 ? parts : content;
   };
 
-  // 渲染单条消息
-  const renderMessageItem = (msg) => {
-    if (!msg) return null;
+  // Helper: Get SC Color
+  const getSCColor = (price) => {
+    // Colors: { main: Body Color, header: Header Color, text: Text Color }
+    
+    // Special Amounts (Purple Theme)
+    if (price === 77777) return { main: '#7e00a8', header: '#9510c2', text: '#fff' }; // Deepest Purple
+    if (price === 17777) return { main: '#900bbd', header: '#a825d1', text: '#fff' }; // Deep Purple
+    if (price === 7777) return { main: '#b645da', header: '#c860e6', text: '#fff' }; // Medium Deep Purple
+    if (price === 777) return { main: '#d280f0', header: '#dd99f4', text: '#fff' }; // Medium Light Purple
+    if (price === 177) return { main: '#ebb8fc', header: '#f2cafd', text: '#333' }; // Light Purple (Dark Text)
+    if (price === 77) return { main: '#f5d4ff', header: '#fae5ff', text: '#333' }; // Lightest Purple (Dark Text)
 
-    return (
-      <div key={msg.id} className={`message message-${msg.type}`}>
-        {renderMessageContent(msg)}
-      </div>
-    );
+    // Standard Bilibili / OBS Tiers
+    // >= 2000: Dark Red
+    if (price >= 2000) return { main: '#B01E34', header: '#FFD4D7', text: '#fff' };
+    // >= 1000: Red
+    if (price >= 1000) return { main: '#E54D4D', header: '#FFD9D9', text: '#fff' };
+    // >= 500: Orange
+    if (price >= 500) return { main: '#E09443', header: '#FFEBD6', text: '#fff' };
+    // >= 100: Yellow
+    if (price >= 100) return { main: '#E2B52B', header: '#FFF7E3', text: '#333' }; // Yellow usually needs dark text
+    // >= 50: Cyan
+    if (price >= 50) return { main: '#427D9E', header: '#ECF6F9', text: '#fff' };
+    // < 50: Blue
+    return { main: '#2A60B2', header: '#EDF5FF', text: '#fff' };
   };
 
-  // 渲染消息内容
-  const renderMessageContent = (msg) => {
-    // 定义大航海相关常量（在 switch 外部，避免重复声明）
-    const guardNames = { 1: '总督', 2: '提督', 3: '舰长' };
-    const guardColors = { 1: '#ff6699', 2: '#9b39f4', 3: '#00d7ff' };
+  // Helper: Get Relative Time
+  const getRelativeTime = (timestamp) => {
+    const now = Date.now() / 1000;
+    const diff = now - timestamp;
     
-    switch (msg.type) {
-      case 'danmaku': {
-        const guardLevel = msg.user?.guardLevel || 0;
-        const hasMedal = !!msg.medal;
-        
-        // 根据大航海等级和粉丝牌设置底色
-        let backgroundColor = 'transparent';
-        if (guardLevel === 1) {
-          // 总督 - 粉色底
-          backgroundColor = 'rgba(255, 102, 153, 0.08)';
-        } else if (guardLevel === 2) {
-          // 提督 - 紫色底
-          backgroundColor = 'rgba(155, 57, 244, 0.08)';
-        } else if (guardLevel === 3) {
-          // 舰长 - 蓝色底
-          backgroundColor = 'rgba(31, 163, 241, 0.08)';
-        } else if (hasMedal) {
-          // 有粉丝牌但非大航海 - 淡蓝色底
-          backgroundColor = 'rgba(63, 180, 246, 0.05)';
-        }
-        
-        return (
-          <div style={{
-            backgroundColor,
-            padding: backgroundColor !== 'transparent' ? '4px 8px' : '0',
-            borderRadius: '4px',
-            marginLeft: '-8px',
-            marginRight: '-8px'
-          }}>
-            {/* 用户头像 */}
-            {msg.user?.face && (
-              <img 
-                src={msg.user.face}
-                alt={msg.user.username}
-                referrerPolicy="no-referrer"
-                style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%',
-                  marginRight: '8px',
-                  verticalAlign: 'middle',
-                  objectFit: 'cover',
-                  border: '1px solid #e1e8ed',
-                  flexShrink: 0
-                }}
-                onError={(e) => {
-                  // 头像加载失败时隐藏
-                  e.target.style.display = 'none';
-                }}
-              />
-            )}
-            {msg.medal && (
-              <span 
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'stretch',
-                  marginRight: '4px',
-                  verticalAlign: 'middle',
-                  height: '18px',
-                  borderRadius: '9px',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(63, 180, 246, 0.4)',
-                  boxShadow: 'none'
-                }}>
-                {/* 粉丝牌主体 - 名称部分 */}
-                <span 
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    backgroundImage: 'linear-gradient(45deg, rgba(63, 180, 246, 0.6), rgba(63, 180, 246, 0.6))',
-                    padding: '0 5px',
-                    fontSize: '12px',
-                    lineHeight: '1',
-                    color: '#FFFFFF',
-                    fontWeight: '400',
-                    position: 'relative'
-                  }}>
-                  {/* 大航海图标 */}
-                  {guardLevel > 0 && (
-                    <span 
-                      style={{
-                        display: 'inline-block',
-                        width: '12px',
-                        height: '12px',
-                        marginRight: '2px',
-                        borderRadius: '50%',
-                        background: 'white',
-                        border: '1.5px solid ' + (
-                          guardLevel === 3 
-                            ? '#1fa3f1'
-                            : guardLevel === 2
-                            ? '#9b39f4'
-                            : '#ff6699'
-                        ),
-                        fontSize: '7px',
-                        lineHeight: '9px',
-                        textAlign: 'center',
-                        flexShrink: 0,
-                        color: guardLevel === 3 
-                          ? '#1fa3f1'
-                          : guardLevel === 2
-                          ? '#9b39f4'
-                          : '#ff6699'
-                      }}
-                      title={guardNames[guardLevel]}>
-                      ⚓
-                    </span>
-                  )}
-                  <span style={{ whiteSpace: 'nowrap' }}>{msg.medal.name}</span>
-                </span>
-                {/* 粉丝牌等级部分 */}
-                <span 
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundImage: 'linear-gradient(45deg, rgba(63, 180, 246, 0.7), rgba(63, 180, 246, 0.7))',
-                    padding: '0 4px',
-                    minWidth: '18px',
-                    fontSize: '12px',
-                    lineHeight: '1',
-                    color: '#FFFFFF',
-                    fontWeight: '400'
-                  }}>
-                  {msg.medal.level}
-                </span>
-              </span>
-            )}
-            <span style={{
-              fontWeight: '400',
-              color: '#61666d',
-              marginRight: '0'
-            }}>
-              {msg.user?.username || '未知用户'} : 
-            </span>
-            <span style={{ 
-              color: '#18191c',
-              wordBreak: 'break-all'
-            }}>
-              {renderContentWithEmoji(msg.content, msg.emots)}
-            </span>
-          </div>
-        );
-      }
+    if (diff < 60) return '刚刚';
+    if (diff < 3600) return `${Math.floor(diff / 60)}分钟前`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}小时前`;
+    return `${Math.floor(diff / 86400)}天前`;
+  };
 
-      case 'superchat':
-        return (
-          <div style={{
-            backgroundColor: msg.backgroundColor || '#f97316',
-            padding: '8px',
-            borderRadius: '4px',
-            marginTop: '4px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {msg.user?.face && (
-                <img src={msg.user.face} alt="" style={{
-                  width: '24px',
-                  height: '24px',
-                  borderRadius: '50%'
-                }} />
-              )}
-              <span className="username" style={{ fontWeight: 'bold' }}>
-                {msg.user?.username}
-              </span>
-              <span style={{ 
-                marginLeft: 'auto', 
-                color: '#ffd700', 
-                fontWeight: 'bold',
-                fontSize: '14px'
-              }}>
-                ¥{msg.price}
-              </span>
-            </div>
-            <div style={{ color: 'white', marginTop: '4px' }}>{msg.message}</div>
-          </div>
-        );
-
-      case 'like':
-        return (
-          <span style={{ color: '#ff69b4' }}>
-            ❤️ {msg.user?.username} {msg.likeText || '点赞了'}
-          </span>
-        );
-
-      case 'gift':
-        return (
-          <>
-            <span>🎁 {msg.user?.username}</span>
-            <span className="content"> 赠送了 {msg.num} 个 {msg.giftName}</span>
-          </>
-        );
-
-      case 'guard':
-        return (
-          <>
-            <span>⚓ {msg.user?.username}</span>
-            <span className="content"> 开通了 {guardNames[msg.guardLevel]}</span>
-          </>
-        );
-
-      case 'welcome': {
-        const actions = { 1: '进入', 2: '关注', 3: '分享' };
-        const username = msg.user?.username || msg.username || '用户';
-        const action = actions[msg.msgType] || '进入';
-        return (
-          <>
-            <span>👋 {username}</span>
-            <span className="content"> {action}了直播间</span>
-          </>
-        );
-      }
-        
-      case 'entry_effect':
-        return (
-          <span style={{ color: '#ffa500' }}>
-            ✨ {msg.user?.username} 进场
-          </span>
-        );
-
-      case 'system':
-        return <span className={`system-msg ${msg.level}`}>{msg.content}</span>;
-
-      default:
-        return <span className="content">{JSON.stringify(msg)}</span>;
-    }
+  // Helper: Get Medal Color based on level (Updated to match official snippets)
+  const getMedalColor = (level) => {
+    if (level >= 41) return '#9066d3'; // Purple
+    if (level >= 31) return '#6892ff'; // Blue
+    if (level >= 21) return '#5dc0f7'; // Light Blue
+    if (level >= 11) return '#cf86b2'; // Pink
+    return '#727bb5'; // Blue Grey (1-10)
   };
 
   return (
-    <div className="danmaku-page">
+    <div className="danmaku-dashboard">
+      {/* Header */}
       <div className="danmaku-header">
-        <h1>🎬 直播间弹幕</h1>
-        <button onClick={handleLogout} className="logout-btn">退出登录</button>
-      </div>
-
-      <div className="control-panel">
-        <div className="room-input">
-          <input
-            type="text"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
-            placeholder="输入直播间号 (例如: 22603245)"
-            disabled={connected}
-          />
-          {!connected ? (
-            <button onClick={connectRoom} className="connect-btn">
-              连接
-            </button>
-          ) : (
-            <button onClick={disconnect} className="disconnect-btn">
-              断开
-            </button>
-          )}
+        <div className="header-left">
+          <div className="logo-area" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <img src="/logo192.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '50%' }} onError={(e) => e.target.style.display = 'none'} />
+            <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>Unia Danmuku</span>
+          </div>
         </div>
 
-        <div className="info-bar">
-          <span className={`status ${connected ? 'connected' : 'disconnected'}`}>
-            {connected ? '● 已连接' : '○ 未连接'}
-          </span>
+        <div className="header-right">
           {connected && (
-            <>
-              {watchedCount > 0 && (
-                <span className="watched">
-                  👁️ {watchedCount.toLocaleString()}人看过
-                </span>
-              )}
-              {rankCount > 0 && (
-                <span className="rank">
-                  🔥 高能榜: {rankCount.toLocaleString()}人
-                </span>
-              )}
-            </>
+            <div className="stats-bar" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+              {/* Anchor Info */}
+              <div className="stat-item anchor-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <img 
+                  src={anchorFace || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'} 
+                  alt={anchorName}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                  referrerPolicy="no-referrer"
+                />
+                {/* <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{anchorName}</span> */}
+              </div>
+
+              {/* Guard Count */}
+              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>大航海</span>
+                <NumberFlow 
+                  value={guardCount} 
+                  format={{ useGrouping: true }}
+                  style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', fontVariantNumeric: 'tabular-nums' }}
+                />
+              </div>
+
+              {/* Fans Club / Popularity */}
+              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>粉丝团</span>
+                <NumberFlow 
+                  value={fansClubCount > 0 ? fansClubCount : followerCount} 
+                  format={{ useGrouping: true }}
+                  style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', fontVariantNumeric: 'tabular-nums' }}
+                />
+              </div>
+
+              {/* Rank Count */}
+              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>高能榜</span>
+                <NumberFlow 
+                  value={rankCount} 
+                  format={{ useGrouping: true }}
+                  style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', fontVariantNumeric: 'tabular-nums' }}
+                />
+              </div>
+
+              {/* Live Duration */}
+              <div className="stat-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1 }}>
+                <span style={{ fontSize: '11px', color: '#999', marginBottom: '2px' }}>时长</span>
+                <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#333' }}>{liveDuration}</span>
+              </div>
+              
+              {/* Ticker Placeholder (Optional, based on image) */}
+              <div className="ticker-placeholder" style={{ display: 'flex', gap: '5px', marginLeft: '10px' }}>
+                {/* Can be populated with recent SC/Gift avatars later */}
+              </div>
+            </div>
           )}
-          <button onClick={clearMessages} className="clear-btn">
-            清空消息
-          </button>
         </div>
       </div>
 
-      <div className="messages-container">
-        {messages.map((msg) => renderMessageItem(msg))}
-        <div ref={messagesEndRef} />
-      </div>
+      {/* Main Content */}
+      <div className="danmaku-content-area">
+        {/* Column 1: Danmaku */}
+        <div className="danmaku-column" style={{ position: 'relative' }}>
+          <div className="column-header">
+            <span className="column-title">实时弹幕</span>
+            <span className="column-count">{danmakuList.length}</span>
+          </div>
+          <div 
+            className="column-body" 
+            ref={danmakuListRef}
+            onScroll={handleScrollCheck}
+            onWheel={handleUserScrollInteraction}
+            onTouchMove={handleUserScrollInteraction}
+          >
+            {danmakuList.map(msg => {
+              // Filter out SC, Gift, and Guard messages from the main danmaku column
+              if (msg.type === 'superchat' || msg.type === 'gift' || msg.type === 'guard') {
+                return null;
+              }
 
-      <div className="tips">
-        <p>💡 提示:</p>
-        <ul>
-          <li>输入直播间号后点击"连接"开始接收弹幕</li>
-          <li>支持显示普通弹幕、礼物、上舰、进房等消息</li>
-          <li>消息会自动滚动，最多保留200条</li>
-        </ul>
+              // Normal Danmaku (Simple Style)
+              const guardLevel = msg.user?.guardLevel || 0;
+              
+              return (
+                <div key={msg.id} className={`danmaku-item ${guardLevel > 0 ? `guard-msg-${guardLevel}` : ''}`}>
+                  <div className="avatar">
+                    <img 
+                      src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
+                      alt={msg.user?.username}
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  
+                  <div className="content-area">
+                    <div className="username-line">
+                      {/* Fan Badge */}
+                      {msg.medal && (
+                        <div 
+                          className={`fans-medal ${guardLevel > 0 ? 'has-guard' : ''}`}
+                          style={{ 
+                            '--medal-color': getMedalColor(msg.medal.level)
+                          }}
+                        >
+                          <div className="fans-medal-label">
+                            {guardLevel > 0 && (
+                              <div className="medal-guard-icon-wrapper">
+                                <img 
+                                  src={
+                                    guardLevel === 3 
+                                      ? 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/captain-Bjw5Byb5.png'
+                                      : guardLevel === 2
+                                      ? 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/supervisor-u43ElIjU.png'
+                                      : 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/governor-DpDXKEdA.png'
+                                  }
+                                  alt={`guard-${guardLevel}`}
+                                  className="medal-guard-icon"
+                                />
+                              </div>
+                            )}
+                            <span className="fans-medal-content">{msg.medal.name}</span>
+                          </div>
+                          <div className="fans-medal-level">
+                            {msg.medal.level}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Standalone Guard Icon (only if no medal) */}
+                      {!msg.medal && guardLevel > 0 && (
+                        <img 
+                          src={
+                            guardLevel === 3 
+                              ? 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/captain-Bjw5Byb5.png'
+                              : guardLevel === 2
+                              ? 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/supervisor-u43ElIjU.png'
+                              : 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/governor-DpDXKEdA.png'
+                          }
+                          alt={`guard-${guardLevel}`}
+                          className="guard-icon"
+                        />
+                      )}
+                      <span className={`username ${guardLevel > 0 ? `guard-${guardLevel}` : ''}`}>
+                        {msg.user?.username || '未知用户'}
+                      </span>
+                    </div>
+                    <div className="danmaku-text">
+                      {renderContentWithEmoji(msg.content, msg.emots)}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={danmakuEndRef} />
+          </div>
+          {showNewMsgButton && (
+            <div className="new-msg-btn" onClick={scrollToBottom}>
+              新消息 {unreadCount > 99 ? '99+' : unreadCount}
+              <span className="arrow-down">↓</span>
+            </div>
+          )}
+        </div>
+
+        {/* Column 2: Super Chat */}
+        <div className="danmaku-column">
+          <div className="column-header">
+            <span className="column-title">醒目留言</span>
+            <span className="column-count">{scList.length}</span>
+          </div>
+          <div 
+            className="column-body"
+            ref={scListRef}
+            onScroll={handleScScrollCheck}
+            onWheel={handleScUserScrollInteraction}
+            onTouchMove={handleScUserScrollInteraction}
+          >
+            {scList.map(msg => {
+              const colors = getSCColor(msg.price);
+              const timeStr = getRelativeTime(msg.time);
+              return (
+                <div 
+                  key={msg.id} 
+                  className="sc-card"
+                  style={{ 
+                    '--sc-main': colors.main, 
+                    '--sc-header': colors.header,
+                    '--sc-text': colors.text 
+                  }}
+                >
+                  <div className="sc-header">
+                    <div className="sc-header-left">
+                      <div className="sc-avatar-wrapper">
+                        <img 
+                          className="sc-avatar"
+                          src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="sc-header-content">
+                        <div className="sc-name">{msg.user?.username}</div>
+                        <div className="sc-price">CN¥{msg.price}</div>
+                      </div>
+                    </div>
+                    <div className="sc-time">{timeStr}</div>
+                  </div>
+                  <div className="sc-message">
+                    {msg.message}
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={scEndRef} />
+          </div>
+        </div>
+
+        {/* Column 3: Gifts & Guards */}
+        <div className="danmaku-column">
+          <div className="column-header">
+            <span className="column-title">礼物 & 上舰</span>
+            <span className="column-count">{giftList.length}</span>
+          </div>
+          <div 
+            className="column-body"
+            ref={giftListRef}
+            onScroll={handleGiftScrollCheck}
+            onWheel={handleGiftUserScrollInteraction}
+            onTouchMove={handleGiftUserScrollInteraction}
+          >
+            {giftList.map(msg => {
+              const isGuard = msg.type === 'guard';
+              
+              // Calculate Price in CNY
+              // If coinType is 'gold', price is usually in 1000 = 1 CNY (or 100 = 0.1 CNY). 
+              // Standard Bilibili API: price is unit price. 
+              // For paid gifts (gold), 1000 units = 1 CNY.
+              // For free gifts (silver), we treat value as low/0 for display purposes or display raw.
+              
+              let priceDisplay = '';
+              let priceValue = 0;
+
+              if (msg.coinType === 'gold') {
+                priceValue = msg.price / 1000;
+                priceDisplay = `CN¥${priceValue}`;
+              } else if (msg.coinType === 'silver') {
+                priceValue = 0; // Treat silver as 0 CNY for threshold
+                priceDisplay = `${msg.price}银瓜子`;
+              } else {
+                // Fallback
+                priceValue = msg.price; 
+                priceDisplay = `¥${msg.price}`;
+              }
+
+              // Threshold for large card display: Guard or Price >= 9.9 CNY
+              const isLargeCard = isGuard || (msg.coinType === 'gold' && priceValue >= 9.9);
+              
+              if (isLargeCard) {
+                // Determine background color
+                let bgColor = '#23ade5'; // Default Blue (Guard 3 / Captain)
+                if (isGuard) {
+                   if (msg.guardLevel === 3) bgColor = '#1E90FF'; // Captain (Blue)
+                   if (msg.guardLevel === 2) bgColor = '#b074f0'; // Admiral (Purple)
+                   if (msg.guardLevel === 1) bgColor = '#ff6868'; // Governor (Red)
+                } else {
+                   bgColor = '#42B25F'; // Green for Gifts >= 10
+                }
+
+                // Determine Icon
+                let iconSrc = msg.giftIconDynamic || msg.giftIcon; // Prefer dynamic for large card
+                if (isGuard) {
+                   if (msg.guardLevel === 3) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/captain-Bjw5Byb5.png';
+                   else if (msg.guardLevel === 2) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/supervisor-u43ElIjU.png';
+                   else if (msg.guardLevel === 1) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/governor-DpDXKEdA.png';
+                }
+
+                if (isGuard) {
+                  // Guard Card Layout (Reference: Blue Card)
+                  return (
+                    <div 
+                      key={msg.id} 
+                      className="gift-card-large guard-card"
+                      style={{ backgroundColor: bgColor }}
+                    >
+                      <div className="guard-card-left">
+                        <img 
+                          className="guard-avatar"
+                          src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="guard-card-content">
+                        <div className="guard-username">{msg.user?.username}</div>
+                        <div className="guard-price">CN¥{msg.price / 1000}</div>
+                        <div className="guard-message">
+                          开通{msg.giftName}，已陪伴主播 {msg.num || 1} 天
+                        </div>
+                      </div>
+                      <div className="guard-card-right">
+                        <img src={iconSrc} alt="" className="guard-icon-large" />
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Large Gift Card Layout (Reference: Green Card)
+                  return (
+                    <div 
+                      key={msg.id} 
+                      className="gift-card-large gift-card-highlight"
+                      style={{ backgroundColor: bgColor }}
+                    >
+                      <div className="gift-highlight-left">
+                        <img 
+                          className="gift-highlight-avatar"
+                          src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      <div className="gift-highlight-content">
+                        <div className="gift-highlight-top">
+                          <span className="gift-highlight-username">{msg.user?.username}</span>
+                        </div>
+                        <div className="gift-highlight-name">{msg.giftName}</div>
+                      </div>
+                      <div className="gift-highlight-right">
+                         <div className="gift-highlight-price">{priceDisplay}</div>
+                      </div>
+                      {iconSrc && (
+                        <div className="gift-highlight-bg-icon">
+                          <img src={iconSrc} alt="" />
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              } else {
+                // Small Compact Row (< 10)
+                // Prefer static icon for small row
+                const smallIconSrc = msg.giftIconStatic || msg.giftIcon;
+                
+                return (
+                  <div key={msg.id} className="gift-row-small">
+                    <img 
+                      className="gift-avatar-small"
+                      src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                    />
+                    <span className="gift-username-small">{msg.user?.username}</span>
+                    {smallIconSrc && (
+                      <img className="gift-icon-small" src={smallIconSrc} alt="" />
+                    )}
+                    <span className="gift-name-small">{msg.giftName}</span>
+                    <span className="gift-price-small">{priceDisplay}</span>
+                  </div>
+                );
+              }
+            })}
+            <div ref={giftEndRef} />
+          </div>
+        </div>
       </div>
     </div>
   );

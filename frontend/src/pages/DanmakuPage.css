@@ -1,281 +1,869 @@
-.danmaku-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
+/* DanmakuPage.css */
+.danmaku-dashboard {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f0f2f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-.danmaku-header {
+/* Header Stats Bar */
+.danmaku-dashboard .danmaku-header {
+  height: 50px;
+  background-color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  z-index: 10;
+  flex-shrink: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.danmaku-dashboard .header-left {
+  display: flex;
+  align-items: center;
+}
+
+.danmaku-dashboard .header-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+}
+
+.danmaku-dashboard .room-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.danmaku-dashboard .room-input {
+  padding: 6px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.danmaku-dashboard .room-input:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.danmaku-dashboard .connect-btn {
+  padding: 6px 16px;
+  background-color: #1890ff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.danmaku-dashboard .connect-btn:hover {
+  background-color: #40a9ff;
+}
+
+.danmaku-dashboard .connect-btn.disconnect {
+  background-color: #ff4d4f;
+}
+
+.danmaku-dashboard .connect-btn.disconnect:hover {
+  background-color: #ff7875;
+}
+
+.danmaku-dashboard .stats-bar {
+  display: flex;
+  gap: 24px;
+  margin-left: 40px;
+  color: #666;
+  font-size: 14px;
+}
+
+.danmaku-dashboard .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.danmaku-dashboard .stat-value {
+  font-weight: 600;
+  color: #333;
+}
+
+.danmaku-dashboard .status-indicator {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.danmaku-dashboard .status-indicator.live {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  border: 1px solid #91d5ff;
+}
+
+.danmaku-dashboard .status-indicator.offline {
+  background-color: #f5f5f5;
+  color: #999;
+  border: 1px solid #d9d9d9;
+}
+
+/* Main Content Area */
+.danmaku-dashboard .danmaku-content-area {
+  flex: 1;
+  display: flex;
+  padding: 16px;
+  gap: 16px;
+  overflow: hidden;
+}
+
+/* Columns */
+.danmaku-dashboard .danmaku-column {
+  flex: 1;
+  background-color: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  min-width: 0; /* Prevent flex item from overflowing */
+}
+
+.danmaku-dashboard .column-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: 600;
+  color: #333;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  color: white;
+  background-color: #fafafa;
 }
 
-.danmaku-header h1 {
-  margin: 0;
-}
-
-.logout-btn {
-  background: #f56c6c;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-
-.logout-btn:hover {
-  background: #f34d4d;
-  transform: translateY(-2px);
-}
-
-.control-panel {
-  background: white;
-  border-radius: 15px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.room-input {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.room-input input {
-  flex: 1;
-  padding: 12px 15px;
-  border: 2px solid #e0e0e0;
-  border-radius: 10px;
+.danmaku-dashboard .column-title {
   font-size: 16px;
-  transition: border-color 0.3s;
 }
 
-.room-input input:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.room-input input:disabled {
+.danmaku-dashboard .column-count {
+  font-size: 12px;
+  color: #999;
   background: #f5f5f5;
-  cursor: not-allowed;
-}
-
-.connect-btn, .disconnect-btn {
-  padding: 12px 30px;
-  border: none;
+  padding: 2px 8px;
   border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s;
 }
 
-.connect-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+.danmaku-dashboard .column-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
 }
 
-.connect-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+/* Scrollbar styling */
+.danmaku-dashboard .column-body::-webkit-scrollbar {
+  width: 6px;
+  background: transparent; /* Ensure track is transparent */
 }
 
-.disconnect-btn {
-  background: #ff6b6b;
-  color: white;
+.danmaku-dashboard .column-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.disconnect-btn:hover {
-  background: #ff5252;
-  transform: translateY(-2px);
+.danmaku-dashboard .column-body::-webkit-scrollbar-thumb {
+  background: transparent; /* Hidden by default */
+  border-radius: 3px;
+  transition: background 0.3s; /* Smooth transition */
 }
 
-.info-bar {
+.danmaku-dashboard .column-body:hover::-webkit-scrollbar-thumb {
+  background: #ccc; /* Show on hover */
+}
+
+.danmaku-dashboard .column-body::-webkit-scrollbar-thumb:hover {
+  background: #999; /* Darker on direct hover */
+}
+
+.danmaku-dashboard .column-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ==========================================================================
+   OBS Simple Style Integration (Scaled Down)
+   ========================================================================== */
+
+.danmaku-dashboard {
+  /* Scaled down variables - Adjusted sizes based on screenshot */
+  --username-font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  --username-font-size: 16px; /* Increased */
+  --username-font-weight: 800; /* Extra bold */
+  --username-color: #5b3496; /* Default purple from screenshot */
+  --username-color-guard1: #ff1a75;
+  --username-color-guard2: #9b39f4;
+  --username-color-guard3: #00c8fd; /* Cyan from screenshot */
+  
+  --danmaku-font-family: 'Microsoft YaHei', 'SimHei', sans-serif;
+  --danmaku-font-size: 18px; /* Increased */
+  --danmaku-font-weight: 700; /* Bold */
+  --danmaku-color: #9f7ad3; /* Light purple from screenshot */
+  
+  --avatar-size: 48px; /* Increased */
+  --item-spacing: 2px; /* Reduced from 6px */
+  --emot-size: 24px;
+  
+  /* Stroke and Shadow */
+  --stroke-color: #ffffff;
+  --stroke-width: 1.5px;
+  --shadow-color: rgba(0, 0, 0, 0.2);
+  
+  /* Smooth Stroke Shadow Definition (Thinner for Dashboard) */
+  --smooth-stroke-shadow: 
+    1.2px 0 0 var(--stroke-color),
+    -1.2px 0 0 var(--stroke-color),
+    0 1.2px 0 var(--stroke-color),
+    0 -1.2px 0 var(--stroke-color),
+    1px 1px 0 var(--stroke-color),
+    -1px 1px 0 var(--stroke-color),
+    1px -1px 0 var(--stroke-color),
+    -1px -1px 0 var(--stroke-color),
+    0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Danmaku Item (Left Column) */
+.danmaku-dashboard .danmaku-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: var(--item-spacing);
+  animation: slideIn 0.3s ease-out;
+  padding: 4px 8px;
+}
+
+/* Avatar */
+.danmaku-dashboard .danmaku-item .avatar {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  flex-shrink: 0;
+  margin-right: 12px;
+}
+
+.danmaku-dashboard .danmaku-item .avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Content Area */
+.danmaku-dashboard .danmaku-item .content-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+/* Username Line */
+.danmaku-dashboard .danmaku-item .username-line {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding-top: 15px;
-  border-top: 1px solid #e0e0e0;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
-.status {
-  font-weight: 600;
-  padding: 5px 15px;
-  border-radius: 20px;
+.danmaku-dashboard .danmaku-item .username-line .guard-icon {
+  height: 18px !important;
+  width: auto !important;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
-.status.connected {
-  color: #67c23a;
-  background: #f0f9ff;
+.danmaku-dashboard .danmaku-item .username {
+  font-family: var(--username-font-family);
+  font-size: var(--username-font-size);
+  font-weight: var(--username-font-weight);
+  color: var(--username-color);
+  line-height: 1.2;
+  
+  /* Smooth stroke effect removed */
+  text-shadow: none;
 }
 
-.status.disconnected {
-  color: #909399;
-  background: #f4f4f5;
+.danmaku-dashboard .danmaku-item .username.guard-3 { color: var(--username-color-guard3) !important; }
+.danmaku-dashboard .danmaku-item .username.guard-2 { color: var(--username-color-guard2) !important; }
+.danmaku-dashboard .danmaku-item .username.guard-1 { color: var(--username-color-guard1) !important; }
+
+/* Danmaku Text */
+.danmaku-dashboard .danmaku-item .danmaku-text {
+  font-family: var(--danmaku-font-family);
+  font-size: var(--danmaku-font-size);
+  font-weight: var(--danmaku-font-weight);
+  color: var(--danmaku-color);
+  line-height: 1.5;
+  word-wrap: break-word;
+  margin-left: 2px;
+  
+  /* Smooth stroke effect removed */
+  text-shadow: none;
 }
 
-.popularity {
-  color: #606266;
-  font-weight: 600;
+/* Emotes */
+.danmaku-dashboard .danmaku-item .emote {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px;
 }
 
-.clear-btn {
-  margin-left: auto;
-  padding: 8px 20px;
-  border: 1px solid #dcdfe6;
-  background: white;
-  border-radius: 8px;
-  cursor: pointer;
-  color: #606266;
-  transition: all 0.3s;
+.danmaku-dashboard .danmaku-item .emote-small {
+  height: 1.5em;
+  width: auto;
+  vertical-align: text-bottom;
 }
 
-.clear-btn:hover {
-  background: #f5f7fa;
-  border-color: #c0c4cc;
+.danmaku-dashboard .danmaku-item .emote-large {
+  height: 60px; /* Half of typical large emote size */
+  width: auto;
+  display: block;
+  margin: 6px 0;
 }
 
-.messages-container {
-  background: white;
-  border-radius: 15px;
-  padding: 20px;
-  height: 500px;
-  overflow-y: auto;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  margin-bottom: 20px;
+/* SC Item (Left Column) */
+.danmaku-dashboard .sc-item {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: var(--item-spacing);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-.message {
-  padding: 6px 15px;
-  margin-bottom: 3px;
-  border-radius: 6px;
-  line-height: 1.6;
+.danmaku-dashboard .sc-item .sc-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--sc-bg, #7497ED);
+  gap: 8px;
+  position: relative;
+}
+
+.danmaku-dashboard .sc-item .sc-avatar {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.danmaku-dashboard .sc-item .sc-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.danmaku-dashboard .sc-item .sc-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.danmaku-dashboard .sc-item .sc-username {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: var(--smooth-stroke-shadow);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.danmaku-dashboard .sc-item .sc-price {
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.danmaku-dashboard .sc-item .sc-content {
+  padding: 8px 12px;
+  background: var(--sc-bg-light, #8AAAF2);
+  color: #6e46ff;
+  font-size: 13px;
+  line-height: 1.4;
+  
+  text-shadow: var(--smooth-stroke-shadow);
+}
+
+/* System Message (Gift/Guard in Left Column) */
+.danmaku-dashboard .system-msg .danmaku-text {
+  color: #666;
+  text-shadow: none;
+}
+
+.danmaku-dashboard .system-msg .highlight {
+  color: #ff6600;
+  font-weight: bold;
+  margin: 0 4px;
+}
+
+/* SC Cards (Middle Column) */
+.danmaku-dashboard .sc-card {
+  background: transparent;
+  border-radius: 12px;
+  margin-bottom: 6px; /* Reduced from 12px */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
   animation: slideIn 0.3s ease-out;
-  transition: background 0.2s;
-  border-left: none;
+  display: flex;
+  flex-direction: column;
 }
 
-.message:hover {
-  background: #f5f7fa !important;
+.danmaku-dashboard .sc-header {
+  background: var(--sc-header);
+  padding: 10px 14px; /* Reduced padding */
+  display: flex;
+  align-items: flex-start; /* Align to top */
+  justify-content: space-between;
+  position: relative;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.danmaku-dashboard .sc-header-left {
+  display: flex;
+  align-items: flex-start; /* Align avatar and text to top */
+  gap: 10px; /* Reduced gap */
+}
+
+.danmaku-dashboard .sc-avatar-wrapper {
+  width: 60px; /* Scaled 1.5x */
+  height: 60px; /* Scaled 1.5x */
+  flex-shrink: 0;
+}
+
+.danmaku-dashboard .sc-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  object-fit: cover;
+}
+
+.danmaku-dashboard .sc-header-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Distribute vertically */
+  align-items: flex-start; /* Left align text */
+  height: 60px; /* Match avatar height */
+  padding: 2px 0; /* Slight padding */
+}
+
+.danmaku-dashboard .sc-name {
+  font-size: 24px; /* Scaled 1.5x */
+  font-weight: 800;
+  color: #333;
+  line-height: 1.1; /* Tighter line height */
+  margin-bottom: 0; /* Remove margin */
+  text-shadow: none;
+}
+
+.danmaku-dashboard .sc-price {
+  font-size: 21px; /* Scaled 1.5x */
+  font-weight: 700;
+  color: #333;
+  opacity: 0.9;
+  background: none;
+  padding: 0;
+  text-shadow: none; /* Removed shadow */
+}
+
+.danmaku-dashboard .sc-time {
+  font-size: 18px; /* Scaled 1.5x */
+  color: #666;
+  margin-left: auto;
+  align-self: flex-end; /* Align to bottom right */
+  margin-bottom: 4px; /* Align with price baseline */
+}
+
+.danmaku-dashboard .sc-message {
+  background: var(--sc-main);
+  padding: 12px 14px; /* Reduced padding */
+  color: var(--sc-text, #fff);
+  font-size: 23px; /* Scaled 1.5x */
+  line-height: 1.3; /* Tighter line height */
+  word-wrap: break-word;
+  flex: 1;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+
+/* ==========================================================================
+   New Gift & Guard Card Styles (Reference Matching)
+   ========================================================================== */
+
+/* Common Card Base */
+.danmaku-dashboard .gift-card-large {
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 6px;
+  position: relative;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: slideIn 0.3s ease-out;
+  display: flex;
+  align-items: center;
+  min-height: 100px;
+}
+
+/* --- Guard Card (Blue Style) --- */
+.danmaku-dashboard .guard-card {
+  background: linear-gradient(90deg, #1E90FF 0%, #4facfe 100%);
+}
+
+.danmaku-dashboard .guard-card-left {
+  flex-shrink: 0;
+  margin-right: 16px;
+  z-index: 2;
+}
+
+.danmaku-dashboard .guard-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.danmaku-dashboard .guard-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 2;
+  min-width: 0;
+}
+
+.danmaku-dashboard .guard-username {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.danmaku-dashboard .guard-price {
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.danmaku-dashboard .guard-message {
+  font-size: 16px;
+  opacity: 0.95;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.danmaku-dashboard .guard-card-right {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+  opacity: 0.9;
+}
+
+.danmaku-dashboard .guard-icon-large {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+/* --- Gift Highlight Card (Green Style) --- */
+.danmaku-dashboard .gift-highlight {
+  /* Background color set inline */
+  padding: 12px 16px;
+}
+
+.danmaku-dashboard .gift-highlight-left {
+  flex-shrink: 0;
+  margin-right: 16px;
+  z-index: 2;
+}
+
+.danmaku-dashboard .gift-highlight-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.8);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.danmaku-dashboard .gift-highlight-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  z-index: 2;
+  min-width: 0;
+}
+
+.danmaku-dashboard .gift-highlight-top {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.danmaku-dashboard .gift-highlight-username {
+  font-size: 20px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.danmaku-dashboard .gift-highlight-name {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.danmaku-dashboard .gift-highlight-right {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 2;
+  text-align: right;
+}
+
+.danmaku-dashboard .gift-highlight-price {
+  font-size: 28px;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.danmaku-dashboard .gift-highlight-bg-icon {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 100px;
+  height: 100px;
+  opacity: 0.6;
+  z-index: 1;
+  transform: rotate(-10deg);
+}
+
+.danmaku-dashboard .gift-highlight-bg-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Small Gift Row (< 10 CNY) */
+.danmaku-dashboard .gift-row-small {
+  display: flex;
+  align-items: center;
+  padding: 6px 0; /* Scaled 1.5x */
+  margin-bottom: 2px; /* Reduced from 6px */
+  background: none;
+  font-size: 21px; /* Scaled 1.5x */
+  color: #333;
+  animation: slideIn 0.2s ease-out;
+}
+
+.danmaku-dashboard .gift-avatar-small {
+  width: 36px; /* Scaled 1.5x */
+  height: 36px; /* Scaled 1.5x */
+  border-radius: 50%;
+  margin-right: 12px; /* Scaled 1.5x */
+}
+
+.danmaku-dashboard .gift-username-small {
+  font-weight: 600;
+  color: #555;
+  margin-right: 12px; /* Scaled 1.5x */
+  white-space: nowrap;
+}
+
+.danmaku-dashboard .gift-icon-small {
+  width: 30px; /* Scaled 1.5x */
+  height: 30px; /* Scaled 1.5x */
+  object-fit: contain;
+  margin-right: 6px; /* Scaled 1.5x */
+  vertical-align: middle;
+}
+
+.danmaku-dashboard .gift-name-small {
+  color: #1890ff;
+  font-weight: 600;
+  margin-right: 6px; /* Scaled 1.5x */
+}
+
+.danmaku-dashboard .gift-price-small {
+  color: #1890ff;
+  font-weight: 700;
+  margin-left: 0;
 }
 
 @keyframes slideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Fan Badge Styles */
+.fans-medal {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--medal-color, #6688cc);
+  border-radius: 12px; /* Large pill shape */
+  font-size: 12px;
+  height: 18px;
+  line-height: 1;
+  margin-right: 1px;
+  overflow: hidden;
+  vertical-align: middle;
+  cursor: default;
+  position: relative;
+  padding: 0;
+  background: none;
+  z-index: 1;
+}
+
+.fans-medal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--medal-color);
+  opacity: 1; /* Fully opaque background */
+  z-index: -1;
+}
+
+.fans-medal-label {
+  display: flex;
+  align-items: center;
+  padding: 0 2px 0 6px;
+  height: 100%;
+  color: #fff;
+}
+
+/* Adjust padding when guard icon is present to make it flush left */
+.fans-medal.has-guard .fans-medal-label {
+  padding-left: 0;
+}
+
+.fans-medal-content {
+  color: #fff;
+  font-weight: normal;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+}
+
+.fans-medal-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px 0 1px;
+  height: 100%;
+  color: #fff;
+  font-weight: bold;
+  background: none;
+}
+
+.medal-guard-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  margin-right: 2px;
+  margin-left: -1px; /* Pull icon to the absolute left edge */
+}
+
+.medal-guard-icon {
+  height: 20px;
+  width: auto;
+  vertical-align: middle;
+  object-fit: contain;
+}
+
+/* Guard Message Backgrounds */
+.danmaku-item.guard-msg-3 { /* Captain */
+  background: linear-gradient(90deg, rgba(138, 209, 254, 0.3) 0%, rgba(138, 209, 254, 0) 100%);
+  border-radius: 4px;
+  margin-left: -4px;
+  padding-left: 4px;
+}
+
+.danmaku-item.guard-msg-2 { /* Admiral */
+  background: linear-gradient(90deg, rgba(200, 160, 255, 0.3) 0%, rgba(200, 160, 255, 0) 100%);
+  border-radius: 4px;
+  margin-left: -4px;
+  padding-left: 4px;
+}
+
+.danmaku-item.guard-msg-1 { /* Governor */
+  background: linear-gradient(90deg, rgba(255, 150, 150, 0.3) 0%, rgba(255, 150, 150, 0) 100%);
+  border-radius: 4px;
+  margin-left: -4px;
+  padding-left: 4px;
+}
+
+/* New Message Floating Button */
+.new-msg-btn {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1890ff;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+  cursor: pointer;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: popIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.new-msg-btn:hover {
+  background-color: #40a9ff;
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.5);
+}
+
+.new-msg-btn:active {
+  transform: translateX(-50%) translateY(0);
+}
+
+.arrow-down {
+  font-size: 10px;
+}
+
+@keyframes popIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateX(-50%) scale(0.8) translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(-50%) scale(1) translateY(0);
   }
-}
-
-.message-danmaku {
-  background: #ffffff;
-}
-
-.message-gift {
-  background: #fffbf0;
-}
-
-.message-guard {
-  background: #fff5f5;
-}
-
-.message-welcome {
-  background: #f0fdf4;
-}
-
-.message-superchat {
-  background: #fef3c7;
-}
-
-.message-system {
-  background: #f9fafb;
-  font-style: italic;
-  color: #6b7280;
-}
-
-.timestamp {
-  color: #9ca3af;
-  font-size: 11px;
-  margin-right: 8px;
-  font-family: 'Monaco', 'Menlo', monospace;
-}
-
-.medal {
-  display: inline-block;
-  background: linear-gradient(135deg, #ff6b6b, #feca57);
-  color: white;
-  font-size: 12px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-right: 6px;
-  font-weight: 600;
-}
-
-.username {
-  font-weight: 600;
-  color: #303133;
-  margin-right: 6px;
-}
-
-.content {
-  color: #606266;
-}
-
-.system-msg {
-  color: #606266;
-}
-
-.system-msg.error {
-  color: #f56c6c;
-  font-weight: 600;
-}
-
-.tips {
-  background: white;
-  border-radius: 15px;
-  padding: 20px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  color: #606266;
-}
-
-.tips p {
-  font-weight: 600;
-  margin-bottom: 10px;
-  color: #303133;
-}
-
-.tips ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.tips li {
-  margin-bottom: 5px;
-  line-height: 1.6;
-}
-
-/* 滚动条样式 */
-.messages-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.messages-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
-}
-
-.messages-container::-webkit-scrollbar-thumb {
-  background: #888;
-  border-radius: 10px;
-}
-
-.messages-container::-webkit-scrollbar-thumb:hover {
-  background: #555;
 }
