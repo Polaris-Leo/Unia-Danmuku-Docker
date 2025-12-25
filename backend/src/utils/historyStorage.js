@@ -74,10 +74,36 @@ export async function loadHistory(roomId, sessionId) {
           crlfDelay: Infinity
         });
 
+        const seen = new Set();
+
         for await (const line of rl) {
           if (line.trim()) {
             try {
-              history[type].push(JSON.parse(line));
+              const item = JSON.parse(line);
+              
+              // 生成唯一指纹用于去重
+              let fingerprint = '';
+              if (type === 'danmaku') {
+                // 弹幕：时间戳 + 用户UID + 内容
+                fingerprint = `${item.timestamp}-${item.user?.uid}-${item.content}`;
+              } else if (type === 'gift') {
+                // 礼物：时间戳 + 用户UID + 礼物ID + 数量 + 价格
+                fingerprint = `${item.timestamp}-${item.user?.uid}-${item.giftId}-${item.num}-${item.price}`;
+              } else if (type === 'superchat') {
+                // SC：时间 + 用户UID + 价格
+                fingerprint = `${item.time}-${item.user?.uid}-${item.price}`;
+              } else if (type === 'guard') {
+                // 上舰：时间戳 + 用户UID + 等级
+                fingerprint = `${item.timestamp}-${item.user?.uid}-${item.guardLevel}`;
+              } else {
+                // 其他：直接序列化
+                fingerprint = JSON.stringify(item);
+              }
+
+              if (!seen.has(fingerprint)) {
+                seen.add(fingerprint);
+                history[type].push(item);
+              }
             } catch (e) {
               // Ignore parse errors
             }
