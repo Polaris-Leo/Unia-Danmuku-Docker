@@ -21,6 +21,15 @@ export class BilibiliLiveWS {
     this.userFaceCache = new Map();  // 用户头像URL缓存
     this.faceCacheFile = path.join(process.cwd(), 'data', 'face-cache.json');
     this.loadFaceCache();  // 加载持久化缓存
+
+    this.emoteCache = new Map(); // 表情包缓存
+    this.emoteCacheFile = path.join(process.cwd(), 'data', 'emote-cache.json');
+    this.loadEmoteCache();
+
+    this.giftCache = new Map(); // 礼物缓存
+    this.giftCacheFile = path.join(process.cwd(), 'data', 'gift-cache.json');
+    this.loadGiftCache();
+
     this.isRateLimited = false;  // 是否处于限速状态
     this.rateLimitTime = null;   // 限速触发时间
     this.rateLimitCD = 5 * 60 * 1000;  // CD时间：5分钟
@@ -218,6 +227,68 @@ export class BilibiliLiveWS {
       fs.writeFileSync(this.faceCacheFile, JSON.stringify(data, null, 2));
     } catch (error) {
       console.log('⚠️  保存头像缓存失败:', error.message);
+    }
+  }
+
+  /**
+   * 加载表情包缓存
+   */
+  loadEmoteCache() {
+    try {
+      if (fs.existsSync(this.emoteCacheFile)) {
+        const data = JSON.parse(fs.readFileSync(this.emoteCacheFile, 'utf-8'));
+        this.emoteCache = new Map(Object.entries(data));
+        console.log(`📦 已加载 ${this.emoteCache.size} 个表情缓存`);
+      }
+    } catch (error) {
+      console.log('⚠️  加载表情缓存失败:', error.message);
+    }
+  }
+
+  /**
+   * 保存表情包缓存
+   */
+  saveEmoteCache() {
+    try {
+      const dir = path.dirname(this.emoteCacheFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const data = Object.fromEntries(this.emoteCache);
+      fs.writeFileSync(this.emoteCacheFile, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.log('⚠️  保存表情缓存失败:', error.message);
+    }
+  }
+
+  /**
+   * 加载礼物缓存
+   */
+  loadGiftCache() {
+    try {
+      if (fs.existsSync(this.giftCacheFile)) {
+        const data = JSON.parse(fs.readFileSync(this.giftCacheFile, 'utf-8'));
+        this.giftCache = new Map(Object.entries(data));
+        console.log(`📦 已加载 ${this.giftCache.size} 个礼物缓存`);
+      }
+    } catch (error) {
+      console.log('⚠️  加载礼物缓存失败:', error.message);
+    }
+  }
+
+  /**
+   * 保存礼物缓存
+   */
+  saveGiftCache() {
+    try {
+      const dir = path.dirname(this.giftCacheFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      const data = Object.fromEntries(this.giftCache);
+      fs.writeFileSync(this.giftCacheFile, JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.log('⚠️  保存礼物缓存失败:', error.message);
     }
   }
 
@@ -685,6 +756,20 @@ export class BilibiliLiveWS {
         // 如果没有任何表情，设为 null
         const finalEmots = Object.keys(emots).length > 0 ? emots : null;
         
+        // 缓存表情
+        if (finalEmots) {
+          let hasNewEmote = false;
+          Object.entries(finalEmots).forEach(([key, value]) => {
+            if (!this.emoteCache.has(key)) {
+              this.emoteCache.set(key, value);
+              hasNewEmote = true;
+            }
+          });
+          if (hasNewEmote) {
+            this.saveEmoteCache();
+          }
+        }
+
         // 从协议中直接获取用户信息（包括头像）
         const uid = info[2][0];
         const userInfo = info[0]?.[15]?.user?.base;
@@ -753,6 +838,20 @@ export class BilibiliLiveWS {
         console.log(`🎁 收到礼物: ${giftData.giftName} (ID: ${giftData.giftId}, 价格: ${giftData.price})`);
         console.log(`   - 图标: ${iconDynamic || '无'}`);
         
+        // 缓存礼物图标
+        if (iconDynamic || iconStatic) {
+          const giftIdStr = String(giftData.giftId);
+          if (!this.giftCache.has(giftIdStr)) {
+            this.giftCache.set(giftIdStr, {
+              name: giftData.giftName,
+              icon: iconDynamic || iconStatic,
+              staticIcon: iconStatic,
+              dynamicIcon: iconDynamic
+            });
+            this.saveGiftCache();
+          }
+        }
+
         let giftUserFace = giftData.face;
         if (giftUserFace && giftUserFace.startsWith('http://')) {
           giftUserFace = giftUserFace.replace('http://', 'https://');

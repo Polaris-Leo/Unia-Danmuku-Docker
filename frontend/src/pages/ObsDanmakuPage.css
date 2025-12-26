@@ -352,12 +352,18 @@ html, body {
 }
 
 /* 表情图片 */
-.danmaku-emot {
+.danmaku-emot, .emote {
   display: inline-block;
-  height: var(--emot-size);
-  max-height: var(--emot-size);
+  height: var(--danmaku-font-size);
+  max-height: var(--danmaku-font-size);
   vertical-align: middle;
   margin: 0 2px;
+}
+
+/* 大表情特殊处理 */
+.emote-large {
+  height: var(--emot-size);
+  max-height: var(--emot-size);
 }
 
 /* SC（醒目留言）样式 */

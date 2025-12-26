@@ -65,12 +65,11 @@ const ObsPreview = ({ settings }) => {
       id: 6,
       type: 'message',
       user: { username: '表情包达人', face: 'https://i0.hdslb.com/bfs/face/member/noface.jpg' },
-      message: '这也太好笑了吧 [dog] [吃瓜] [笑哭]',
+      message: '这也太好笑了吧 [dog] [笑哭]',
       guardLevel: 0,
       emots: {
-        '[dog]': { url: 'https://i0.hdslb.com/bfs/live/bbd9045570d0c569eb8a9328a22e724d3971553f.png', height: 20 },
-        '[吃瓜]': { url: 'https://i0.hdslb.com/bfs/live/09293327bbc868715c484e70d76d20ab972719ad.png', height: 20 },
-        '[笑哭]': { url: 'https://i0.hdslb.com/bfs/live/a965923685953320669d274e528f70e7365e332f.png', height: 20 }
+        '[dog]': { url: 'https://i0.hdslb.com/bfs/live/4428c84e694fbf4e0ef6c06e958d9352c3582740.png', height: 20 },
+        '[笑哭]': { url: 'https://i0.hdslb.com/bfs/live/e6073c6849f735ae6cb7af3a20ff7dcec962b4c5.png', height: 20 }
       }
     },
     {
@@ -79,6 +78,16 @@ const ObsPreview = ({ settings }) => {
       user: { username: '话痨用户', face: 'https://i0.hdslb.com/bfs/face/member/noface.jpg' },
       message: '这是一条非常非常长的弹幕消息，用来测试换行显示的效果是否正常。如果显示不正常的话，就需要调整CSS样式了。',
       guardLevel: 0
+    },
+    {
+      id: 8,
+      type: 'message',
+      user: { username: '大表情测试', face: 'https://i0.hdslb.com/bfs/face/member/noface.jpg' },
+      message: '[U脑过载]',
+      guardLevel: 0,
+      emots: {
+        '[U脑过载]': { url: 'https://i0.hdslb.com/bfs/live/6528ebcab366a09c92c4c6bf2a16af1a088a9578.png', height: 60 }
+      }
     }
   ];
 
@@ -197,11 +206,12 @@ const ObsPreview = ({ settings }) => {
         if (i < matches.length) {
           const key = matches[i];
           if (msg.emots[key]) {
+            const isLarge = msg.emots[key].height > 30;
             content.push(
               <img 
                 key={i} 
                 src={msg.emots[key].url} 
-                className="danmaku-emot" 
+                className={`danmaku-emot ${isLarge ? 'emote-large' : ''}`}
                 alt={key} 
                 referrerPolicy="no-referrer"
                 onError={(e) => { e.target.style.display = 'none'; }} // 图片加载失败隐藏

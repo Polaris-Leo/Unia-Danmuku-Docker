@@ -264,10 +264,16 @@
 /* 表情图片 */
 .obs-preview-scale-container .danmaku-emot {
   display: inline-block;
-  height: var(--emot-size, 28px);
-  max-height: var(--emot-size, 28px);
+  height: var(--danmaku-font-size);
+  max-height: var(--danmaku-font-size);
   vertical-align: middle;
   margin: 0 2px;
+}
+
+/* 大表情特殊处理 */
+.obs-preview-scale-container .danmaku-emot.emote-large {
+  height: var(--emot-size);
+  max-height: var(--emot-size);
 }
 
 /* SC（醒目留言）样式 */
