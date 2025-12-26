@@ -1,16 +1,36 @@
 .obs-settings-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  background: #ffffff;
+  padding: 20px;
+}
+
+.obs-settings-layout {
+  display: grid;
+  grid-template-columns: 1fr auto; /* Left: Settings (Fluid), Right: Preview (Auto width based on height) */
+  gap: 40px;
+  max-width: 98%;
+  margin: 0 auto;
+  align-items: start;
 }
 
 .settings-container {
-  max-width: 800px;
-  margin: 0 auto;
   background: white;
+  /* Removed card styles for cleaner look on white bg */
+  padding: 0 20px;
+  min-width: 0;
+}
+
+.preview-container {
+  position: sticky;
+  top: 20px;
+  background: #1a1a1a;
   border-radius: 12px;
-  padding: 30px;
+  overflow: hidden;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  height: calc(100vh - 40px); /* Fill viewport height minus padding */
+  aspect-ratio: 2400/3000; /* Enforce 2400x3000 aspect ratio (4:5) */
+  display: flex;
+  flex-direction: column;
 }
 
 .settings-container h1 {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ObsPreview from './ObsPreview';
 import './ObsSettingsPage.css';
 
 const ObsSettingsPage = () => {
@@ -40,7 +41,13 @@ const ObsSettingsPage = () => {
   useEffect(() => {
     const saved = localStorage.getItem('obsSettings');
     if (saved) {
-      setSettings(JSON.parse(saved));
+      try {
+        const parsed = JSON.parse(saved);
+        // 合并默认设置，确保新添加的设置项（如emotSize）有默认值
+        setSettings(prev => ({ ...prev, ...parsed }));
+      } catch (e) {
+        console.error('Failed to parse settings', e);
+      }
     }
     const savedRoom = localStorage.getItem('obsRoomId');
     if (savedRoom) {
@@ -136,374 +143,382 @@ const ObsSettingsPage = () => {
 
   return (
     <div className="obs-settings-page">
-      <div className="settings-container">
-        <h1>OBS 弹幕样式设置</h1>
+      <div className="obs-settings-layout">
+        {/* 左侧：设置面板 */}
+        <div className="settings-container">
+          <h1>OBS 弹幕样式设置</h1>
 
-        {/* 房间号设置 */}
-        <div className="setting-section">
-          <h2>基本设置</h2>
-          <div className="setting-item">
-            <label>房间号：</label>
-            <input
-              type="text"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
-              placeholder="输入B站直播间号"
-            />
+          {/* 房间号设置 */}
+          <div className="setting-section">
+            <h2>基本设置</h2>
+            <div className="setting-item">
+              <label>房间号：</label>
+              <input
+                type="text"
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                placeholder="输入B站直播间号"
+              />
+            </div>
+          </div>
+
+          {/* 用户名样式 */}
+          <div className="setting-section">
+            <h2>用户名样式</h2>
+            
+            <div className="setting-item">
+              <label>字体：</label>
+              <input
+                type="text"
+                value={settings.usernameFontFamily}
+                onChange={(e) => setSettings({ ...settings, usernameFontFamily: e.target.value })}
+                placeholder="如: Microsoft YaHei, SimHei"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>字号：</label>
+              <input
+                type="number"
+                value={settings.usernameFontSize}
+                onChange={(e) => setSettings({ ...settings, usernameFontSize: parseInt(e.target.value) })}
+                min="10"
+                max="200"
+              />
+              <span className="unit">px</span>
+            </div>
+
+            <div className="setting-item">
+              <label>粗细：</label>
+              <select
+                value={settings.usernameFontWeight}
+                onChange={(e) => setSettings({ ...settings, usernameFontWeight: e.target.value })}
+              >
+                {fontWeightOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="setting-item">
+              <label>颜色：</label>
+              <input
+                type="color"
+                value={settings.usernameColor}
+                onChange={(e) => setSettings({ ...settings, usernameColor: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.usernameColor}
+                onChange={(e) => setSettings({ ...settings, usernameColor: e.target.value })}
+                placeholder="#333333"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>舰长颜色：</label>
+              <input
+                type="color"
+                value={settings.usernameColorGuard3}
+                onChange={(e) => setSettings({ ...settings, usernameColorGuard3: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.usernameColorGuard3}
+                onChange={(e) => setSettings({ ...settings, usernameColorGuard3: e.target.value })}
+                placeholder="#1fa3f1"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>提督颜色：</label>
+              <input
+                type="color"
+                value={settings.usernameColorGuard2}
+                onChange={(e) => setSettings({ ...settings, usernameColorGuard2: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.usernameColorGuard2}
+                onChange={(e) => setSettings({ ...settings, usernameColorGuard2: e.target.value })}
+                placeholder="#9b39f4"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>总督颜色：</label>
+              <input
+                type="color"
+                value={settings.usernameColorGuard1}
+                onChange={(e) => setSettings({ ...settings, usernameColorGuard1: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.usernameColorGuard1}
+                onChange={(e) => setSettings({ ...settings, usernameColorGuard1: e.target.value })}
+                placeholder="#ff1a75"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>描边宽度：</label>
+              <input
+                type="number"
+                value={settings.usernameStrokeWidth}
+                onChange={(e) => setSettings({ ...settings, usernameStrokeWidth: parseInt(e.target.value) })}
+                min="0"
+                max="50"
+              />
+              <span className="unit">px</span>
+            </div>
+
+            <div className="setting-item">
+              <label>描边颜色：</label>
+              <input
+                type="color"
+                value={settings.usernameStrokeColor}
+                onChange={(e) => setSettings({ ...settings, usernameStrokeColor: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.usernameStrokeColor}
+                onChange={(e) => setSettings({ ...settings, usernameStrokeColor: e.target.value })}
+                placeholder="#ffffff"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>增强描边效果：</label>
+              <input
+                type="checkbox"
+                checked={settings.usernameEnhancedStroke}
+                onChange={(e) => setSettings({ ...settings, usernameEnhancedStroke: e.target.checked })}
+              />
+              <span className="hint">（启用8方向描边+外发光+阴影）</span>
+            </div>
+
+            {settings.usernameEnhancedStroke && (
+              <>
+                <div className="setting-item">
+                  <label>外发光强度：</label>
+                  <input
+                    type="number"
+                    value={settings.usernameGlowIntensity}
+                    onChange={(e) => setSettings({ ...settings, usernameGlowIntensity: parseInt(e.target.value) })}
+                    min="0"
+                    max="100"
+                  />
+                  <span className="unit">px</span>
+                </div>
+
+                <div className="setting-item">
+                  <label>阴影强度：</label>
+                  <input
+                    type="number"
+                    value={settings.usernameShadowIntensity}
+                    onChange={(e) => setSettings({ ...settings, usernameShadowIntensity: parseInt(e.target.value) })}
+                    min="0"
+                    max="100"
+                  />
+                  <span className="unit">px</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 弹幕内容样式 */}
+          <div className="setting-section">
+            <h2>弹幕内容样式</h2>
+            
+            <div className="setting-item">
+              <label>字体：</label>
+              <input
+                type="text"
+                value={settings.danmakuFontFamily}
+                onChange={(e) => setSettings({ ...settings, danmakuFontFamily: e.target.value })}
+                placeholder="如: Microsoft YaHei, SimHei"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>字号：</label>
+              <input
+                type="number"
+                value={settings.danmakuFontSize}
+                onChange={(e) => setSettings({ ...settings, danmakuFontSize: parseInt(e.target.value) })}
+                min="10"
+                max="200"
+              />
+              <span className="unit">px</span>
+            </div>
+
+            <div className="setting-item">
+              <label>粗细：</label>
+              <select
+                value={settings.danmakuFontWeight}
+                onChange={(e) => setSettings({ ...settings, danmakuFontWeight: e.target.value })}
+              >
+                {fontWeightOptions.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="setting-item">
+              <label>颜色：</label>
+              <input
+                type="color"
+                value={settings.danmakuColor}
+                onChange={(e) => setSettings({ ...settings, danmakuColor: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.danmakuColor}
+                onChange={(e) => setSettings({ ...settings, danmakuColor: e.target.value })}
+                placeholder="#333333"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>描边宽度：</label>
+              <input
+                type="number"
+                value={settings.danmakuStrokeWidth}
+                onChange={(e) => setSettings({ ...settings, danmakuStrokeWidth: parseInt(e.target.value) })}
+                min="0"
+                max="50"
+              />
+              <span className="unit">px</span>
+            </div>
+
+            <div className="setting-item">
+              <label>描边颜色：</label>
+              <input
+                type="color"
+                value={settings.danmakuStrokeColor}
+                onChange={(e) => setSettings({ ...settings, danmakuStrokeColor: e.target.value })}
+              />
+              <input
+                type="text"
+                value={settings.danmakuStrokeColor}
+                onChange={(e) => setSettings({ ...settings, danmakuStrokeColor: e.target.value })}
+                placeholder="#ffffff"
+              />
+            </div>
+
+            <div className="setting-item">
+              <label>增强描边效果：</label>
+              <input
+                type="checkbox"
+                checked={settings.danmakuEnhancedStroke}
+                onChange={(e) => setSettings({ ...settings, danmakuEnhancedStroke: e.target.checked })}
+              />
+              <span className="hint">（启用8方向描边+外发光+阴影）</span>
+            </div>
+
+            {settings.danmakuEnhancedStroke && (
+              <>
+                <div className="setting-item">
+                  <label>外发光强度：</label>
+                  <input
+                    type="number"
+                    value={settings.danmakuGlowIntensity}
+                    onChange={(e) => setSettings({ ...settings, danmakuGlowIntensity: parseInt(e.target.value) })}
+                    min="0"
+                    max="100"
+                  />
+                  <span className="unit">px</span>
+                </div>
+
+                <div className="setting-item">
+                  <label>阴影强度：</label>
+                  <input
+                    type="number"
+                    value={settings.danmakuShadowIntensity}
+                    onChange={(e) => setSettings({ ...settings, danmakuShadowIntensity: parseInt(e.target.value) })}
+                    min="0"
+                    max="100"
+                  />
+                  <span className="unit">px</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* 布局设置 */}
+          <div className="setting-section">
+            <h2>布局设置</h2>
+            
+            <div className="setting-item">
+              <label>头像大小：</label>
+              <input
+                type="number"
+                value={settings.avatarSize}
+                onChange={(e) => setSettings({ ...settings, avatarSize: parseInt(e.target.value) })}
+                min="20"
+                max="100"
+              />
+              <span className="unit">px</span>
+            </div>
+
+            <div className="setting-item">
+              <label>弹幕间距：</label>
+              <input
+                type="number"
+                value={settings.itemSpacing}
+                onChange={(e) => setSettings({ ...settings, itemSpacing: parseInt(e.target.value) })}
+                min="0"
+                max="50"
+              />
+              <span className="unit">px</span>
+            </div>
+
+            <div className="setting-item">
+              <label>表情大小：</label>
+              <input
+                type="number"
+                value={settings.emotSize}
+                onChange={(e) => setSettings({ ...settings, emotSize: parseInt(e.target.value) })}
+                min="16"
+                max="60"
+              />
+              <span className="unit">px</span>
+            </div>
+          </div>
+
+          {/* 操作按钮 */}
+          <div className="action-buttons">
+            <button onClick={saveSettings} className="btn-primary">保存设置</button>
+            <button onClick={preview} className="btn-success">预览效果</button>
+            <button onClick={generateObsCss} className="btn-info">生成OBS CSS代码</button>
+            <button onClick={resetSettings} className="btn-warning">重置设置</button>
+            <button onClick={goBack} className="btn-secondary">返回主页</button>
+          </div>
+
+          {/* 使用说明 */}
+          <div className="info-box">
+            <h3>使用说明</h3>
+            <p><strong>方法一：使用localStorage（推荐）</strong></p>
+            <ol>
+              <li>设置完成后点击"保存设置"</li>
+              <li>在OBS中添加"浏览器"源</li>
+              <li>URL填写：<code>http://localhost:5173/obs?room={roomId}</code></li>
+              <li>建议分辨率：1920x1080</li>
+              <li>刷新浏览器源即可看到新样式</li>
+            </ol>
+            <p><strong>方法二：使用OBS自定义CSS（如果localStorage不生效）</strong></p>
+            <ol>
+              <li>点击"生成OBS CSS代码"按钮复制CSS</li>
+              <li>在OBS浏览器源设置中，找到"自定义CSS"框</li>
+              <li>粘贴复制的CSS代码</li>
+              <li>保存并刷新浏览器源</li>
+            </ol>
           </div>
         </div>
 
-        {/* 用户名样式 */}
-        <div className="setting-section">
-              <h2>用户名样式</h2>
-              
-              <div className="setting-item">
-                <label>字体：</label>
-                <input
-                  type="text"
-                  value={settings.usernameFontFamily}
-                  onChange={(e) => setSettings({ ...settings, usernameFontFamily: e.target.value })}
-                  placeholder="如: Microsoft YaHei, SimHei"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>字号：</label>
-                <input
-                  type="number"
-                  value={settings.usernameFontSize}
-                  onChange={(e) => setSettings({ ...settings, usernameFontSize: parseInt(e.target.value) })}
-                  min="10"
-                  max="50"
-                />
-                <span className="unit">px</span>
-              </div>
-
-              <div className="setting-item">
-                <label>粗细：</label>
-                <select
-                  value={settings.usernameFontWeight}
-                  onChange={(e) => setSettings({ ...settings, usernameFontWeight: e.target.value })}
-                >
-                  {fontWeightOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="setting-item">
-                <label>颜色：</label>
-                <input
-                  type="color"
-                  value={settings.usernameColor}
-                  onChange={(e) => setSettings({ ...settings, usernameColor: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.usernameColor}
-                  onChange={(e) => setSettings({ ...settings, usernameColor: e.target.value })}
-                  placeholder="#333333"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>舰长颜色：</label>
-                <input
-                  type="color"
-                  value={settings.usernameColorGuard3}
-                  onChange={(e) => setSettings({ ...settings, usernameColorGuard3: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.usernameColorGuard3}
-                  onChange={(e) => setSettings({ ...settings, usernameColorGuard3: e.target.value })}
-                  placeholder="#1fa3f1"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>提督颜色：</label>
-                <input
-                  type="color"
-                  value={settings.usernameColorGuard2}
-                  onChange={(e) => setSettings({ ...settings, usernameColorGuard2: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.usernameColorGuard2}
-                  onChange={(e) => setSettings({ ...settings, usernameColorGuard2: e.target.value })}
-                  placeholder="#9b39f4"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>总督颜色：</label>
-                <input
-                  type="color"
-                  value={settings.usernameColorGuard1}
-                  onChange={(e) => setSettings({ ...settings, usernameColorGuard1: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.usernameColorGuard1}
-                  onChange={(e) => setSettings({ ...settings, usernameColorGuard1: e.target.value })}
-                  placeholder="#ff1a75"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>描边宽度：</label>
-                <input
-                  type="number"
-                  value={settings.usernameStrokeWidth}
-                  onChange={(e) => setSettings({ ...settings, usernameStrokeWidth: parseInt(e.target.value) })}
-                  min="0"
-                  max="10"
-                />
-                <span className="unit">px</span>
-              </div>
-
-              <div className="setting-item">
-                <label>描边颜色：</label>
-                <input
-                  type="color"
-                  value={settings.usernameStrokeColor}
-                  onChange={(e) => setSettings({ ...settings, usernameStrokeColor: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.usernameStrokeColor}
-                  onChange={(e) => setSettings({ ...settings, usernameStrokeColor: e.target.value })}
-                  placeholder="#ffffff"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>增强描边效果：</label>
-                <input
-                  type="checkbox"
-                  checked={settings.usernameEnhancedStroke}
-                  onChange={(e) => setSettings({ ...settings, usernameEnhancedStroke: e.target.checked })}
-                />
-                <span className="hint">（启用8方向描边+外发光+阴影）</span>
-              </div>
-
-              {settings.usernameEnhancedStroke && (
-                <>
-                  <div className="setting-item">
-                    <label>外发光强度：</label>
-                    <input
-                      type="number"
-                      value={settings.usernameGlowIntensity}
-                      onChange={(e) => setSettings({ ...settings, usernameGlowIntensity: parseInt(e.target.value) })}
-                      min="0"
-                      max="20"
-                    />
-                    <span className="unit">px</span>
-                  </div>
-
-                  <div className="setting-item">
-                    <label>阴影强度：</label>
-                    <input
-                      type="number"
-                      value={settings.usernameShadowIntensity}
-                      onChange={(e) => setSettings({ ...settings, usernameShadowIntensity: parseInt(e.target.value) })}
-                      min="0"
-                      max="20"
-                    />
-                    <span className="unit">px</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* 弹幕内容样式 */}
-            <div className="setting-section">
-              <h2>弹幕内容样式</h2>
-              
-              <div className="setting-item">
-                <label>字体：</label>
-                <input
-                  type="text"
-                  value={settings.danmakuFontFamily}
-                  onChange={(e) => setSettings({ ...settings, danmakuFontFamily: e.target.value })}
-                  placeholder="如: Microsoft YaHei, SimHei"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>字号：</label>
-                <input
-                  type="number"
-                  value={settings.danmakuFontSize}
-                  onChange={(e) => setSettings({ ...settings, danmakuFontSize: parseInt(e.target.value) })}
-                  min="10"
-                  max="50"
-                />
-                <span className="unit">px</span>
-              </div>
-
-              <div className="setting-item">
-                <label>粗细：</label>
-                <select
-                  value={settings.danmakuFontWeight}
-                  onChange={(e) => setSettings({ ...settings, danmakuFontWeight: e.target.value })}
-                >
-                  {fontWeightOptions.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="setting-item">
-                <label>颜色：</label>
-                <input
-                  type="color"
-                  value={settings.danmakuColor}
-                  onChange={(e) => setSettings({ ...settings, danmakuColor: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.danmakuColor}
-                  onChange={(e) => setSettings({ ...settings, danmakuColor: e.target.value })}
-                  placeholder="#333333"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>描边宽度：</label>
-                <input
-                  type="number"
-                  value={settings.danmakuStrokeWidth}
-                  onChange={(e) => setSettings({ ...settings, danmakuStrokeWidth: parseInt(e.target.value) })}
-                  min="0"
-                  max="10"
-                />
-                <span className="unit">px</span>
-              </div>
-
-              <div className="setting-item">
-                <label>描边颜色：</label>
-                <input
-                  type="color"
-                  value={settings.danmakuStrokeColor}
-                  onChange={(e) => setSettings({ ...settings, danmakuStrokeColor: e.target.value })}
-                />
-                <input
-                  type="text"
-                  value={settings.danmakuStrokeColor}
-                  onChange={(e) => setSettings({ ...settings, danmakuStrokeColor: e.target.value })}
-                  placeholder="#ffffff"
-                />
-              </div>
-
-              <div className="setting-item">
-                <label>增强描边效果：</label>
-                <input
-                  type="checkbox"
-                  checked={settings.danmakuEnhancedStroke}
-                  onChange={(e) => setSettings({ ...settings, danmakuEnhancedStroke: e.target.checked })}
-                />
-                <span className="hint">（启用8方向描边+外发光+阴影）</span>
-              </div>
-
-              {settings.danmakuEnhancedStroke && (
-                <>
-                  <div className="setting-item">
-                    <label>外发光强度：</label>
-                    <input
-                      type="number"
-                      value={settings.danmakuGlowIntensity}
-                      onChange={(e) => setSettings({ ...settings, danmakuGlowIntensity: parseInt(e.target.value) })}
-                      min="0"
-                      max="20"
-                    />
-                    <span className="unit">px</span>
-                  </div>
-
-                  <div className="setting-item">
-                    <label>阴影强度：</label>
-                    <input
-                      type="number"
-                      value={settings.danmakuShadowIntensity}
-                      onChange={(e) => setSettings({ ...settings, danmakuShadowIntensity: parseInt(e.target.value) })}
-                      min="0"
-                      max="20"
-                    />
-                    <span className="unit">px</span>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* 布局设置 */}
-            <div className="setting-section">
-              <h2>布局设置</h2>
-              
-              <div className="setting-item">
-                <label>头像大小：</label>
-                <input
-                  type="number"
-                  value={settings.avatarSize}
-                  onChange={(e) => setSettings({ ...settings, avatarSize: parseInt(e.target.value) })}
-                  min="20"
-                  max="100"
-                />
-                <span className="unit">px</span>
-              </div>
-
-              <div className="setting-item">
-                <label>弹幕间距：</label>
-                <input
-                  type="number"
-                  value={settings.itemSpacing}
-                  onChange={(e) => setSettings({ ...settings, itemSpacing: parseInt(e.target.value) })}
-                  min="0"
-                  max="50"
-                />
-                <span className="unit">px</span>
-              </div>
-
-              <div className="setting-item">
-                <label>表情大小：</label>
-                <input
-                  type="number"
-                  value={settings.emotSize}
-                  onChange={(e) => setSettings({ ...settings, emotSize: parseInt(e.target.value) })}
-                  min="16"
-                  max="60"
-                />
-                <span className="unit">px</span>
-              </div>
-            </div>
-
-        {/* 操作按钮 */}
-        <div className="action-buttons">
-          <button onClick={saveSettings} className="btn-primary">保存设置</button>
-          <button onClick={preview} className="btn-success">预览效果</button>
-          <button onClick={generateObsCss} className="btn-info">生成OBS CSS代码</button>
-          <button onClick={resetSettings} className="btn-warning">重置设置</button>
-          <button onClick={goBack} className="btn-secondary">返回主页</button>
-        </div>
-
-        {/* 使用说明 */}
-        <div className="info-box">
-          <h3>使用说明</h3>
-          <p><strong>方法一：使用localStorage（推荐）</strong></p>
-          <ol>
-            <li>设置完成后点击"保存设置"</li>
-            <li>在OBS中添加"浏览器"源</li>
-            <li>URL填写：<code>http://localhost:5173/obs?room={roomId}</code></li>
-            <li>建议分辨率：1920x1080</li>
-            <li>刷新浏览器源即可看到新样式</li>
-          </ol>
-          <p><strong>方法二：使用OBS自定义CSS（如果localStorage不生效）</strong></p>
-          <ol>
-            <li>点击"生成OBS CSS代码"按钮复制CSS</li>
-            <li>在OBS浏览器源设置中，找到"自定义CSS"框</li>
-            <li>粘贴复制的CSS代码</li>
-            <li>保存并刷新浏览器源</li>
-          </ol>
+        {/* 右侧：预览面板 */}
+        <div className="preview-container">
+          <ObsPreview settings={settings} />
         </div>
       </div>
     </div>

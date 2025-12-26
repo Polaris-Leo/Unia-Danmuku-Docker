@@ -38,6 +38,51 @@ const ObsDanmakuPage = () => {
     console.log('🎨 应用样式到CSS变量:', customStyles);
     if (customStyles) {
       const root = document.documentElement;
+      
+      // 生成平滑描边阴影
+      const generateTextShadow = (strokeWidth, strokeColor, glowIntensity, shadowIntensity, enhanced) => {
+        if (!enhanced) {
+          return `
+            ${strokeWidth}px 0 0 ${strokeColor},
+            -${strokeWidth}px 0 0 ${strokeColor},
+            0 ${strokeWidth}px 0 ${strokeColor},
+            0 -${strokeWidth}px 0 ${strokeColor},
+            0 ${shadowIntensity}px ${shadowIntensity}px rgba(0,0,0,0.5)
+          `;
+        }
+
+        // 增强模式：多层描边以实现平滑效果
+        const layers = [0.33, 0.66, 1];
+        const directions = [
+          [1, 0], [-1, 0], [0, 1], [0, -1],
+          [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]
+        ];
+        
+        let shadows = [];
+        
+        // 描边层
+        if (strokeWidth > 0) {
+          layers.forEach(layer => {
+            const w = strokeWidth * layer;
+            directions.forEach(dir => {
+              shadows.push(`${(w * dir[0]).toFixed(1)}px ${(w * dir[1]).toFixed(1)}px 0 ${strokeColor}`);
+            });
+          });
+        }
+        
+        // 外发光
+        if (glowIntensity > 0) {
+          shadows.push(`0 0 ${glowIntensity}px ${strokeColor}`);
+        }
+        
+        // 投影
+        if (shadowIntensity > 0) {
+          shadows.push(`0 ${shadowIntensity * 0.5}px ${shadowIntensity}px rgba(0,0,0,0.6)`);
+        }
+        
+        return shadows.join(', ');
+      };
+
       // 所有样式都需要设置，因为气泡样式也使用了部分CSS变量
       root.style.setProperty('--username-font-family', customStyles.usernameFontFamily);
       root.style.setProperty('--username-font-size', `${customStyles.usernameFontSize}px`);
@@ -46,22 +91,30 @@ const ObsDanmakuPage = () => {
       root.style.setProperty('--username-color-guard1', customStyles.usernameColorGuard1 || '#ff1a75');
       root.style.setProperty('--username-color-guard2', customStyles.usernameColorGuard2 || '#9b39f4');
       root.style.setProperty('--username-color-guard3', customStyles.usernameColorGuard3 || '#1fa3f1');
-      root.style.setProperty('--username-stroke-width', `${customStyles.usernameStrokeWidth}px`);
-      root.style.setProperty('--username-stroke-width-neg', `-${customStyles.usernameStrokeWidth}px`);
-      root.style.setProperty('--username-stroke-color', customStyles.usernameStrokeColor);
-      root.style.setProperty('--username-enhanced-stroke', customStyles.usernameEnhancedStroke !== false ? '1' : '0');
-      root.style.setProperty('--username-glow-intensity', `${customStyles.usernameGlowIntensity || 8}px`);
-      root.style.setProperty('--username-shadow-intensity', `${customStyles.usernameShadowIntensity || 6}px`);
+      
+      // 动态生成用户名阴影
+      root.style.setProperty('--username-text-shadow', generateTextShadow(
+        customStyles.usernameStrokeWidth,
+        customStyles.usernameStrokeColor,
+        customStyles.usernameGlowIntensity || 8,
+        customStyles.usernameShadowIntensity || 6,
+        customStyles.usernameEnhancedStroke !== false
+      ));
+
       root.style.setProperty('--danmaku-font-family', customStyles.danmakuFontFamily);
       root.style.setProperty('--danmaku-font-size', `${customStyles.danmakuFontSize}px`);
       root.style.setProperty('--danmaku-font-weight', customStyles.danmakuFontWeight);
       root.style.setProperty('--danmaku-color', customStyles.danmakuColor);
-      root.style.setProperty('--danmaku-stroke-width', `${customStyles.danmakuStrokeWidth}px`);
-      root.style.setProperty('--danmaku-stroke-width-neg', `-${customStyles.danmakuStrokeWidth}px`);
-      root.style.setProperty('--danmaku-stroke-color', customStyles.danmakuStrokeColor);
-      root.style.setProperty('--danmaku-enhanced-stroke', customStyles.danmakuEnhancedStroke !== false ? '1' : '0');
-      root.style.setProperty('--danmaku-glow-intensity', `${customStyles.danmakuGlowIntensity || 8}px`);
-      root.style.setProperty('--danmaku-shadow-intensity', `${customStyles.danmakuShadowIntensity || 6}px`);
+      
+      // 动态生成弹幕内容阴影
+      root.style.setProperty('--danmaku-text-shadow', generateTextShadow(
+        customStyles.danmakuStrokeWidth,
+        customStyles.danmakuStrokeColor,
+        customStyles.danmakuGlowIntensity || 8,
+        customStyles.danmakuShadowIntensity || 6,
+        customStyles.danmakuEnhancedStroke !== false
+      ));
+
       root.style.setProperty('--avatar-size', `${customStyles.avatarSize}px`);
       root.style.setProperty('--item-spacing', `${customStyles.itemSpacing}px`);
       root.style.setProperty('--emot-size', `${customStyles.emotSize || 28}px`);
