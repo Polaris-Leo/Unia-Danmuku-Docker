@@ -603,23 +603,24 @@ function DanmakuPage() {
     
     // 辅助函数：检查重复
     const isDuplicate = (list, newItem, type) => {
-      const fingerprint = type === 'danmaku' 
-        ? `${newItem.timestamp}-${newItem.user?.uid}-${newItem.content}`
-        : type === 'superchat'
-        ? `${newItem.time}-${newItem.user?.uid}-${newItem.price}`
-        : type === 'gift'
-        ? `${newItem.timestamp}-${newItem.user?.uid}-${newItem.giftId}-${newItem.num}`
-        : `${newItem.timestamp}-${newItem.user?.uid}-${newItem.guardLevel}`; // guard
-
-      return list.slice(-20).some(item => {
-        const itemFingerprint = type === 'danmaku'
+      const getFingerprint = (item) => {
+        return type === 'danmaku' 
           ? `${item.timestamp}-${item.user?.uid}-${item.content}`
           : type === 'superchat'
           ? `${item.time}-${item.user?.uid}-${item.price}`
           : type === 'gift'
           ? `${item.timestamp}-${item.user?.uid}-${item.giftId}-${item.num}`
           : `${item.timestamp}-${item.user?.uid}-${item.guardLevel}`;
-        return itemFingerprint === fingerprint;
+      };
+
+      const fingerprint = getFingerprint(newItem);
+
+      return list.slice(-20).some(item => {
+        const itemFingerprint = getFingerprint(item);
+        if (itemFingerprint === fingerprint) return true;
+        // Check if it matches the last stacked message in a combo
+        if (item.lastFingerprint === fingerprint) return true;
+        return false;
       });
     };
 
@@ -638,19 +639,81 @@ function DanmakuPage() {
           return [...prev, msg].slice(-maxCount);
         });
         setDanmakuList(prev => {
-          // SC也显示在弹幕流中，同样去重
           if (isDuplicate(prev, msg, 'superchat')) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'gift':
+        setGiftList(prev => {
+          // 1. Check for duplicates first (including against lastFingerprint)
+          if (isDuplicate(prev, msg, 'gift')) return prev;
+
+          // 2. Check for stacking (Combo)
+          const lastItem = prev[prev.length - 1];
+          // Only stack if it's a gift (not divider/guard) and same user/giftId
+          if (lastItem && lastItem.type === 'gift' && 
+              lastItem.user?.uid === msg.user?.uid && 
+              lastItem.giftId === msg.giftId) {
+            
+            // Check time window (30 seconds)
+            // msg.timestamp is usually unix timestamp (seconds) or ms. 
+            // Assuming consistent units.
+            const timeDiff = Math.abs((msg.timestamp || 0) - (lastItem.timestamp || 0));
+            
+            // Threshold: 30 seconds. 
+            // If timestamp is large (> 10000000000), it's ms. If < 10000000000, it's seconds.
+            // Bilibili usually uses seconds. 30s.
+            // If it happens to be ms, 30 is 0.03s, which is too strict.
+            // Let's assume seconds. If diff is huge, it won't stack.
+            // To be safe, we can check magnitude.
+            const isMs = (msg.timestamp || 0) > 10000000000;
+            const threshold = isMs ? 30000 : 30;
+
+            if (timeDiff <= threshold) {
+              // Stack it!
+              const currentNum = msg.num || 1;
+              const previousTotal = lastItem.totalNum || lastItem.num || 1;
+              const newTotal = previousTotal + currentNum;
+              
+              const fingerprint = `${msg.timestamp}-${msg.user?.uid}-${msg.giftId}-${msg.num}`;
+
+              const updatedItem = {
+                ...lastItem,
+                num: currentNum, // The latest batch count
+                totalNum: newTotal, // Accumulated count
+                timestamp: msg.timestamp, // Update time to extend window
+                lastFingerprint: fingerprint, // Store for duplicate check
+                // Keep original ID to maintain React key stability or update it?
+                // If we update ID, it might flash. Let's keep ID but force update.
+                // Actually, we need to trigger re-render.
+                // Creating a new object reference is enough for React state.
+              };
+              
+              return [...prev.slice(0, -1), updatedItem];
+            }
+          }
+
+          // 3. New Item
+          const newItem = { 
+            ...msg, 
+            totalNum: msg.num || 1,
+            lastFingerprint: `${msg.timestamp}-${msg.user?.uid}-${msg.giftId}-${msg.num}`
+          };
+          return [...prev, newItem].slice(-maxCount);
+        });
+        
+        // Also add to Danmaku list (optional: do we stack there too? Probably not requested, keep simple)
+        setDanmakuList(prev => {
+          if (isDuplicate(prev, msg, 'gift')) return prev;
+          return [...prev, msg].slice(-maxCount);
+        });
+        break;
       case 'guard':
         setGiftList(prev => {
           if (isDuplicate(prev, msg, data.type)) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         setDanmakuList(prev => {
-          // 礼物也显示在弹幕流中，同样去重
           if (isDuplicate(prev, msg, data.type)) return prev;
           return [...prev, msg].slice(-maxCount);
         });
@@ -1288,7 +1351,15 @@ function DanmakuPage() {
                           <span className="gift-highlight-username" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</span>
                           <span className="gift-highlight-price-left">{priceDisplay}</span>
                         </div>
-                        <div className="gift-highlight-name">{msg.giftName}</div>
+                        <div className="gift-highlight-name">
+                          {msg.giftName}
+                          <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>X{msg.num}</span>
+                          {msg.totalNum > msg.num && (
+                            <span style={{ marginLeft: '4px', opacity: 0.9 }}>
+                              (X{msg.totalNum})
+                            </span>
+                          )}
+                        </div>
                       </div>
                       {iconSrc && (
                         <div className="gift-highlight-bg-icon">
@@ -1317,6 +1388,14 @@ function DanmakuPage() {
                     )}
                     <span className="gift-name-small">{msg.giftName}</span>
                     <span className="gift-price-small">{priceDisplay}</span>
+                    <span className="gift-count-small" style={{ marginLeft: '8px', fontWeight: 'bold', color: '#ff6699' }}>
+                      X{msg.num}
+                      {msg.totalNum > msg.num && (
+                        <span style={{ marginLeft: '4px', color: '#ff6699' }}>
+                          (X{msg.totalNum})
+                        </span>
+                      )}
+                    </span>
                   </div>
                 );
               }
