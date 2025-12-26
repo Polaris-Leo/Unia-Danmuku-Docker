@@ -4,6 +4,91 @@ import NumberFlow from '@number-flow/react';
 import { getAuthStatus, logout, getHistorySessions, getHistoryData } from '../services/api';
 import './DanmakuPage.css';
 
+const UserDetailPopup = ({ user, position, onClose }) => {
+  const popupRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popupRef.current && !popupRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  if (!user) return null;
+
+  // Calculate position to keep it on screen
+  const style = {
+    top: position.y,
+    left: position.x,
+  };
+  
+  // Adjust if going off screen
+  if (position.x + 280 > window.innerWidth) {
+    style.left = window.innerWidth - 290;
+  }
+  if (position.y + 350 > window.innerHeight) {
+    style.top = Math.max(10, position.y - 350); // Flip up
+  }
+
+  return (
+    <div className="user-popup-overlay" onClick={onClose}>
+      <div className="user-popup" style={style} ref={popupRef} onClick={e => e.stopPropagation()}>
+        <div className="user-popup-header">
+          <div className="user-popup-avatar-wrap">
+            <img 
+              src={user.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'} 
+              alt="avatar" 
+              className="user-popup-avatar" 
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="user-popup-info">
+            <div className="user-popup-name-row">
+              <span className="user-popup-name" title={user.username}>{user.username}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{cursor: 'pointer', color: '#a1a1aa'}}>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </div>
+            <div className="user-popup-uid" onClick={() => navigator.clipboard.writeText(user.uid)} title="点击复制UID">
+              UID:{user.uid}
+            </div>
+            <div className="user-popup-time">
+               {user.msgTime ? new Date(user.msgTime).toLocaleString() : '未知时间'}
+            </div>
+          </div>
+        </div>
+        
+        <div className="user-popup-menu">
+          <div className="user-popup-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v2.172a2 2 0 0 1 -.586 1.414l-4.414 4.414v7l-6 2v-8.5l-4.48 -4.928a2 2 0 0 1 -.52 -1.345v-2.227z"></path></svg>
+            筛选该用户
+          </div>
+          <div className="user-popup-item">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M8.8 20v-4.1l1.9.2a2.3 2.3 0 0 0 2.164-2.1V8.3A5.37 5.37 0 0 0 2 8.25c0 2.8.656 3.054 1 4.55a5.77 5.77 0 0 1 .029 2.758L2 20"></path><path d="M19.8 17.8a7.5 7.5 0 0 0 .003-10.603"></path><path d="M17 15a3.5 3.5 0 0 0-.025-4.975"></path></svg>
+            语音播报
+          </div>
+          
+          <div className="user-popup-section-label">外部功能</div>
+          <div className="user-popup-separator"></div>
+          
+          <a href={`https://space.bilibili.com/${user.uid}`} target="_blank" rel="noopener noreferrer" className="user-popup-item user-popup-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6h-6a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-6"></path><path d="M11 13l9 -9"></path><path d="M15 4h5v5"></path></svg>
+            哔哩哔哩空间...
+          </a>
+          <a href={`https://laplace.live/user/${user.uid}`} target="_blank" rel="noopener noreferrer" className="user-popup-item user-popup-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round"><path d="M12 6h-6a2 2 0 0 0 -2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-6"></path><path d="M11 13l9 -9"></path><path d="M15 4h5v5"></path></svg>
+            用户数据...
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function DanmakuPage() {
   const navigate = useNavigate();
   const [roomId, setRoomId] = useState('');
@@ -44,6 +129,28 @@ function DanmakuPage() {
   const [isScAutoScroll, setIsScAutoScroll] = useState(true);
   const [isGiftAutoScroll, setIsGiftAutoScroll] = useState(true);
   
+  // Settings State
+  const [showSettings, setShowSettings] = useState(false);
+  const [onlyCurrentSession, setOnlyCurrentSession] = useState(() => {
+    const saved = localStorage.getItem('onlyCurrentSession');
+    return saved !== null ? saved === 'true' : true;
+  });
+  const [loadedHistorySessions, setLoadedHistorySessions] = useState(new Set());
+
+  // User Popup State
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
+
+  const handleUserClick = (e, user, msgTime) => {
+    e.stopPropagation();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setPopupPosition({
+      x: rect.left,
+      y: rect.bottom + 5
+    });
+    setSelectedUser({ ...user, msgTime });
+  };
+
   const wsRef = useRef(null);
   const danmakuListRef = useRef(null); // Ref for the scroll container
   const scListRef = useRef(null);
@@ -201,6 +308,141 @@ function DanmakuPage() {
       giftEndRef.current.scrollIntoView({ behavior: 'auto' });
     }
   }, [giftList, isGiftAutoScroll]);
+
+  // Settings Logic
+  const toggleOnlyCurrentSession = async () => {
+    const newValue = !onlyCurrentSession;
+    setOnlyCurrentSession(newValue);
+    localStorage.setItem('onlyCurrentSession', String(newValue));
+    
+    if (!newValue) {
+      // 关闭了“仅查看当前场次”，加载历史数据
+      await loadPreviousHistory();
+    } else {
+      // 开启了“仅查看当前场次”，清除历史数据
+      // 如果当前有直播开始时间，保留该时间之后的数据
+      // 否则，如果正在直播，保留所有数据（假设都是当前的）
+      // 如果没在直播，可能需要清空
+      
+      if (liveStartTime > 0) {
+        const filterFunc = (item) => {
+          // 保留 divider 类型的消息吗？不，只保留当前场次
+          if (item.type === 'divider') return false;
+          // 比较时间戳
+          const itemTime = item.timestamp || item.time || 0;
+          return itemTime >= liveStartTime;
+        };
+        
+        setDanmakuList(prev => prev.filter(filterFunc));
+        setScList(prev => prev.filter(filterFunc));
+        setGiftList(prev => prev.filter(filterFunc));
+      } else {
+        // 如果不知道开始时间，但用户切换回“仅当前”，最安全的做法是清空列表并重连（如果在线）
+        // 或者不做任何操作，只是后续不再加载历史
+        // 这里选择清空列表，因为用户期望“仅查看当前”
+        setDanmakuList([]);
+        setScList([]);
+        setGiftList([]);
+        if (connected && wsRef.current) {
+           // 保持连接，新消息会进来
+        }
+      }
+      setLoadedHistorySessions(new Set());
+    }
+  };
+
+  const loadPreviousHistory = async () => {
+    if (!roomId) return;
+    try {
+      const res = await getHistorySessions(roomId);
+      if (!res.success || !res.sessions || res.sessions.length === 0) return;
+      
+      // 过滤掉已经加载的 session
+      // 假设 sessions 是时间戳数组，倒序排列（最新的在前）
+      // 我们需要找到比当前 liveStartTime 早的 session
+      
+      const sortedSessions = [...res.sessions].sort((a, b) => b - a);
+      
+      // 找到第一个未加载且早于当前直播的 session
+      // 如果当前没直播 (liveStartTime=0)，则加载最新的 session
+      // 如果当前直播中，加载 liveStartTime 之前的最新的 session
+      
+      let targetSessionId = null;
+      
+      for (const sessionId of sortedSessions) {
+        if (loadedHistorySessions.has(sessionId)) continue;
+        
+        if (liveStartTime > 0) {
+          if (sessionId < liveStartTime) {
+            targetSessionId = sessionId;
+            break;
+          }
+        } else {
+          // 没在直播，加载最新的未加载 session
+          targetSessionId = sessionId;
+          break;
+        }
+      }
+      
+      if (!targetSessionId) {
+        console.log('没有更多历史场次可加载');
+        return;
+      }
+      
+      // 加载该 session 数据
+      const dataRes = await getHistoryData(roomId, targetSessionId);
+      if (dataRes.success) {
+        const { danmaku, superchat, gift, guard } = dataRes.data;
+        
+        // 标记为已加载
+        setLoadedHistorySessions(prev => new Set(prev).add(targetSessionId));
+        
+        // 处理数据
+        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
+        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
+        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
+        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
+        
+        // 创建分界线
+        // 分界线时间戳设为该场次最后一条消息的时间，或者下一场开始前
+        // 这里简单用该场次最大的时间戳
+        let maxTime = targetSessionId;
+        [...historyDanmaku, ...historySc, ...historyGift, ...historyGuard].forEach(item => {
+            const t = item.timestamp || item.time || 0;
+            if (t > maxTime) maxTime = t;
+        });
+        
+        const divider = {
+            type: 'divider',
+            content: '直播已结束',
+            timestamp: maxTime + 1,
+            id: `divider-${targetSessionId}`
+        };
+        
+        // 合并到列表头部
+        setDanmakuList(prev => [...historyDanmaku, divider, ...prev]);
+        setScList(prev => [...historySc, divider, ...prev]);
+        
+        const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
+        setGiftList(prev => [...combinedGifts, divider, ...prev]);
+        
+      }
+      
+    } catch (error) {
+      console.error('加载历史数据失败:', error);
+    }
+  };
+
+  // Initial load of history if setting is off
+  useEffect(() => {
+    if (roomId && !onlyCurrentSession && loadedHistorySessions.size === 0) {
+      // Delay slightly to allow live_status to arrive if connected
+      const timer = setTimeout(() => {
+        loadPreviousHistory();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [roomId]);
 
   const checkAuth = async () => {
     try {
@@ -381,34 +623,36 @@ function DanmakuPage() {
       });
     };
 
+    const maxCount = onlyCurrentSession ? 200 : 5000;
+
     switch (data.type) {
       case 'danmaku':
         setDanmakuList(prev => {
           if (isDuplicate(prev, msg, 'danmaku')) return prev;
-          return [...prev, msg].slice(-200);
+          return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'superchat':
         setScList(prev => {
           if (isDuplicate(prev, msg, 'superchat')) return prev;
-          return [...prev, msg].slice(-100);
+          return [...prev, msg].slice(-maxCount);
         });
         setDanmakuList(prev => {
           // SC也显示在弹幕流中，同样去重
           if (isDuplicate(prev, msg, 'superchat')) return prev;
-          return [...prev, msg].slice(-200);
+          return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'gift':
       case 'guard':
         setGiftList(prev => {
           if (isDuplicate(prev, msg, data.type)) return prev;
-          return [...prev, msg].slice(-100);
+          return [...prev, msg].slice(-maxCount);
         });
         setDanmakuList(prev => {
           // 礼物也显示在弹幕流中，同样去重
           if (isDuplicate(prev, msg, data.type)) return prev;
-          return [...prev, msg].slice(-200);
+          return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'watched':
@@ -565,30 +809,46 @@ function DanmakuPage() {
     return '#727bb5'; // Blue Grey (1-10)
   };
 
+  // Calculate Totals
+  const scTotal = React.useMemo(() => {
+    return scList.reduce((acc, curr) => {
+      if (curr.type === 'divider') return acc;
+      return acc + (Number(curr.price) || 0);
+    }, 0);
+  }, [scList]);
+
+  const giftTotal = React.useMemo(() => {
+    return giftList.reduce((acc, curr) => {
+      if (curr.type === 'divider') return acc;
+      
+      // Guard (price is in gold/1000)
+      if (curr.type === 'guard') {
+        return acc + (Number(curr.price) || 0) / 1000;
+      }
+      
+      // Gift (gold only)
+      if (curr.coinType === 'gold') {
+        return acc + (Number(curr.price) || 0) / 1000;
+      }
+      
+      return acc;
+    }, 0);
+  }, [giftList]);
+
+  const formatCurrency = (val) => {
+    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(val);
+  };
+
   return (
     <div className="danmaku-dashboard">
       {/* Header */}
       <div className="danmaku-header">
         <div className="header-left">
-          <div className="logo-area" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="logo-area" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: '20px' }}>
             <img src="/logo192.png" alt="Logo" style={{ width: '32px', height: '32px', borderRadius: '50%' }} onError={(e) => e.target.style.display = 'none'} />
             <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#333' }}>Unia Danmuku</span>
             {isHistoryMode && (
               <span className="history-badge">历史回放模式</span>
-            )}
-          </div>
-        </div>
-
-        <div className="header-right">
-          <div className="header-actions" style={{ marginRight: '20px' }}>
-            {isHistoryMode ? (
-              <button className="btn-live" onClick={returnToLive}>
-                返回实时直播
-              </button>
-            ) : (
-              <button className="btn-history" onClick={openHistoryModal}>
-                查看历史场次
-              </button>
             )}
           </div>
 
@@ -666,6 +926,60 @@ function DanmakuPage() {
             </div>
           )}
         </div>
+
+        <div className="header-right">
+          <div className="header-actions" style={{ marginRight: '10px', display: 'flex', alignItems: 'center' }}>
+            {isHistoryMode ? (
+              <button className="btn-live" onClick={returnToLive}>
+                返回实时直播
+              </button>
+            ) : (
+              <button className="btn-history" onClick={openHistoryModal}>
+                查看历史场次
+              </button>
+            )}
+          </div>
+
+          {/* Settings Button (Moved to far right) */}
+          <div style={{ position: 'relative', marginLeft: '10px' }}>
+            <button className="settings-btn" onClick={() => setShowSettings(!showSettings)} title="设置">
+              <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+            
+            {showSettings && (
+              <>
+                <div className="settings-panel-overlay" onClick={() => setShowSettings(false)}></div>
+                <div className="settings-panel">
+                  <div className="settings-header">
+                    <h3>控制台设置</h3>
+                    <button className="close-btn" onClick={() => setShowSettings(false)}>×</button>
+                  </div>
+                  <div className="settings-content">
+                    <div className="setting-item">
+                      <div className="setting-label">仅查看当前场次</div>
+                      <label className="toggle-switch">
+                        <input 
+                          type="checkbox" 
+                          checked={onlyCurrentSession} 
+                          onChange={toggleOnlyCurrentSession}
+                        />
+                        <span className="slider"></span>
+                      </label>
+                    </div>
+                    {!onlyCurrentSession && (
+                      <div style={{ fontSize: '12px', color: '#999', marginTop: '-10px', marginBottom: '15px' }}>
+                        关闭后将加载之前的直播数据，并在场次间显示分界线。
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
@@ -673,8 +987,7 @@ function DanmakuPage() {
         {/* Column 1: Danmaku */}
         <div className="danmaku-column" style={{ position: 'relative' }}>
           <div className="column-header">
-            <span className="column-title">实时弹幕</span>
-            <span className="column-count">{danmakuList.length}</span>
+            <span className="column-count">{danmakuList.length} 条弹幕</span>
           </div>
           <div 
             className="column-body" 
@@ -684,6 +997,15 @@ function DanmakuPage() {
             onTouchMove={handleUserScrollInteraction}
           >
             {danmakuList.map(msg => {
+              // Handle Divider
+              if (msg.type === 'divider') {
+                return (
+                  <div key={msg.id} className="danmaku-divider">
+                    <span>{msg.content}</span>
+                  </div>
+                );
+              }
+
               // Filter out SC, Gift, and Guard messages from the main danmaku column
               if (msg.type === 'superchat' || msg.type === 'gift' || msg.type === 'guard') {
                 return null;
@@ -750,7 +1072,10 @@ function DanmakuPage() {
                           className="guard-icon"
                         />
                       )}
-                      <span className={`username ${guardLevel > 0 ? `guard-${guardLevel}` : ''}`}>
+                      <span 
+                        className={`username ${guardLevel > 0 ? `guard-${guardLevel}` : ''}`}
+                        onClick={(e) => handleUserClick(e, msg.user, msg.time)}
+                      >
                         {msg.user?.username || '未知用户'}
                       </span>
                     </div>
@@ -774,8 +1099,11 @@ function DanmakuPage() {
         {/* Column 2: Super Chat */}
         <div className="danmaku-column">
           <div className="column-header">
-            <span className="column-title">醒目留言</span>
-            <span className="column-count">{scList.length}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="column-count">{scList.length} 条醒目留言</span>
+              <span style={{ color: '#999' }}>•</span>
+              <span style={{ fontWeight: 'bold', color: '#666' }}>{formatCurrency(scTotal)}</span>
+            </div>
           </div>
           <div 
             className="column-body"
@@ -785,6 +1113,13 @@ function DanmakuPage() {
             onTouchMove={handleScUserScrollInteraction}
           >
             {scList.map(msg => {
+              if (msg.type === 'divider') {
+                return (
+                  <div key={msg.id} className="danmaku-divider">
+                    <span>{msg.content}</span>
+                  </div>
+                );
+              }
               const colors = getSCColor(msg.price);
               const timeStr = getRelativeTime(msg.time);
               return (
@@ -808,7 +1143,7 @@ function DanmakuPage() {
                         />
                       </div>
                       <div className="sc-header-content">
-                        <div className="sc-name">{msg.user?.username}</div>
+                        <div className="sc-name" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</div>
                         <div className="sc-price">CN¥{msg.price}</div>
                       </div>
                     </div>
@@ -827,8 +1162,11 @@ function DanmakuPage() {
         {/* Column 3: Gifts & Guards */}
         <div className="danmaku-column">
           <div className="column-header">
-            <span className="column-title">礼物 & 上舰</span>
-            <span className="column-count">{giftList.length}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="column-count">{giftList.length} 个礼物</span>
+              <span style={{ color: '#999' }}>•</span>
+              <span style={{ fontWeight: 'bold', color: '#666' }}>{formatCurrency(giftTotal)}</span>
+            </div>
           </div>
           <div 
             className="column-body"
@@ -838,6 +1176,13 @@ function DanmakuPage() {
             onTouchMove={handleGiftUserScrollInteraction}
           >
             {giftList.map(msg => {
+              if (msg.type === 'divider') {
+                return (
+                  <div key={msg.id} className="danmaku-divider">
+                    <span>{msg.content}</span>
+                  </div>
+                );
+              }
               const isGuard = msg.type === 'guard';
               
               // Calculate Price in CNY
@@ -876,7 +1221,7 @@ function DanmakuPage() {
                 }
 
                 // Determine Icon
-                let iconSrc = msg.giftIconDynamic || msg.giftIcon; // Prefer dynamic for large card
+                let iconSrc = msg.giftIconStatic || msg.giftIcon; // Prefer static as requested
                 if (isGuard) {
                    if (msg.guardLevel === 3) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/captain-Bjw5Byb5.png';
                    else if (msg.guardLevel === 2) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/supervisor-u43ElIjU.png';
@@ -900,7 +1245,7 @@ function DanmakuPage() {
                         />
                       </div>
                       <div className="guard-card-content">
-                        <div className="guard-username">{msg.user?.username}</div>
+                        <div className="guard-username" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</div>
                         <div className="guard-price">CN¥{msg.price / 1000}</div>
                         <div className="guard-message">
                           开通{msg.giftName}，已陪伴主播 {msg.num || 1} 天
@@ -929,7 +1274,7 @@ function DanmakuPage() {
                       </div>
                       <div className="gift-highlight-content">
                         <div className="gift-highlight-top">
-                          <span className="gift-highlight-username">{msg.user?.username}</span>
+                          <span className="gift-highlight-username" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</span>
                           <span className="gift-highlight-price-left">{priceDisplay}</span>
                         </div>
                         <div className="gift-highlight-name">{msg.giftName}</div>
@@ -955,7 +1300,7 @@ function DanmakuPage() {
                       alt=""
                       referrerPolicy="no-referrer"
                     />
-                    <span className="gift-username-small">{msg.user?.username}</span>
+                    <span className="gift-username-small" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</span>
                     {smallIconSrc && (
                       <img className="gift-icon-small" src={smallIconSrc} alt="" />
                     )}
@@ -1005,6 +1350,13 @@ function DanmakuPage() {
           </div>
         </div>
       )}
+
+      {/* User Detail Popup */}
+      <UserDetailPopup 
+        user={selectedUser} 
+        position={popupPosition} 
+        onClose={() => setSelectedUser(null)} 
+      />
     </div>
   );
 }
