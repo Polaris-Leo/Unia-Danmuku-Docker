@@ -82,8 +82,67 @@ const ObsSettingsPage = () => {
     navigate('/dashboard');
   };
 
+  // 生成平滑描边阴影 (与ObsPreview.jsx保持一致)
+  const generateTextShadow = (strokeWidth, strokeColor, glowIntensity, shadowIntensity, enhanced) => {
+    if (!enhanced) {
+      return `
+    ${strokeWidth}px 0 0 ${strokeColor},
+    -${strokeWidth}px 0 0 ${strokeColor},
+    0 ${strokeWidth}px 0 ${strokeColor},
+    0 -${strokeWidth}px 0 ${strokeColor},
+    0 ${shadowIntensity}px ${shadowIntensity}px rgba(0,0,0,0.5)`;
+    }
+
+    // 增强模式：多层描边以实现平滑效果
+    const layers = [0.33, 0.66, 1];
+    const directions = [
+      [1, 0], [-1, 0], [0, 1], [0, -1],
+      [0.7, 0.7], [-0.7, 0.7], [0.7, -0.7], [-0.7, -0.7]
+    ];
+    
+    let shadows = [];
+    
+    // 描边层
+    if (strokeWidth > 0) {
+      layers.forEach(layer => {
+        const w = strokeWidth * layer;
+        directions.forEach(dir => {
+          shadows.push(`${(w * dir[0]).toFixed(1)}px ${(w * dir[1]).toFixed(1)}px 0 ${strokeColor}`);
+        });
+      });
+    }
+    
+    // 外发光
+    if (glowIntensity > 0) {
+      shadows.push(`0 0 ${glowIntensity}px ${strokeColor}`);
+    }
+    
+    // 投影
+    if (shadowIntensity > 0) {
+      shadows.push(`0 ${shadowIntensity * 0.5}px ${shadowIntensity}px rgba(0,0,0,0.6)`);
+    }
+    
+    return shadows.join(', ');
+  };
+
   // 生成OBS自定义CSS代码
   const generateObsCss = () => {
+    const usernameShadow = generateTextShadow(
+      settings.usernameStrokeWidth,
+      settings.usernameStrokeColor,
+      settings.usernameGlowIntensity,
+      settings.usernameShadowIntensity,
+      settings.usernameEnhancedStroke
+    );
+
+    const danmakuShadow = generateTextShadow(
+      settings.danmakuStrokeWidth,
+      settings.danmakuStrokeColor,
+      settings.danmakuGlowIntensity,
+      settings.danmakuShadowIntensity,
+      settings.danmakuEnhancedStroke
+    );
+
     const css = `:root {
   --username-font-family: ${settings.usernameFontFamily};
   --username-font-size: ${settings.usernameFontSize}px;
@@ -97,6 +156,8 @@ const ObsSettingsPage = () => {
   --username-enhanced-stroke: ${settings.usernameEnhancedStroke ? '1' : '0'};
   --username-glow-intensity: ${settings.usernameGlowIntensity}px;
   --username-shadow-intensity: ${settings.usernameShadowIntensity}px;
+  --username-text-shadow: ${usernameShadow};
+  
   --danmaku-font-family: ${settings.danmakuFontFamily};
   --danmaku-font-size: ${settings.danmakuFontSize}px;
   --danmaku-font-weight: ${settings.danmakuFontWeight};
@@ -106,6 +167,8 @@ const ObsSettingsPage = () => {
   --danmaku-enhanced-stroke: ${settings.danmakuEnhancedStroke ? '1' : '0'};
   --danmaku-glow-intensity: ${settings.danmakuGlowIntensity}px;
   --danmaku-shadow-intensity: ${settings.danmakuShadowIntensity}px;
+  --danmaku-text-shadow: ${danmakuShadow};
+  
   --avatar-size: ${settings.avatarSize}px;
   --item-spacing: ${settings.itemSpacing}px;
   --emot-size: ${settings.emotSize}px;
