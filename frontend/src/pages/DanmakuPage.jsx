@@ -1212,10 +1212,21 @@ function DanmakuPage() {
               if (isLargeCard) {
                 // Determine background color
                 let bgColor = '#23ade5'; // Default Blue (Guard 3 / Captain)
+                let textColor = '#fff';
+
                 if (isGuard) {
-                   if (msg.guardLevel === 3) bgColor = '#1E90FF'; // Captain (Blue)
-                   if (msg.guardLevel === 2) bgColor = '#b074f0'; // Admiral (Purple)
-                   if (msg.guardLevel === 1) bgColor = '#ff6868'; // Governor (Red)
+                   if (msg.guardLevel === 3) {
+                     bgColor = '#23ade5'; // Captain (Blue)
+                     textColor = '#fff';
+                   }
+                   if (msg.guardLevel === 2) {
+                     bgColor = '#ae5cff'; // Admiral (Pale Purple)
+                     textColor = '#fff';
+                   }
+                   if (msg.guardLevel === 1) {
+                     bgColor = '#ff7b52'; // Governor (Pale Orange-Red)
+                     textColor = '#fff';
+                   }
                 } else {
                    bgColor = '#42B25F'; // Green for Gifts >= 10
                 }
@@ -1234,7 +1245,7 @@ function DanmakuPage() {
                     <div 
                       key={msg.id} 
                       className="gift-card-large guard-card"
-                      style={{ backgroundColor: bgColor }}
+                      style={{ background: bgColor, color: textColor }}
                     >
                       <div className="guard-card-left">
                         <img 
