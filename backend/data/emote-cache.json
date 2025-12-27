@@ -544,5 +544,21 @@
     "width": 20,
     "height": 20,
     "emoticon_unique": "upower_[胡桃Usa堕令时_灵魂出窍]"
+  },
+  "[手机]": {
+    "count": 1,
+    "descript": "[手机]",
+    "emoji": "[手机]",
+    "emoticon_id": 213,
+    "emoticon_unique": "emoji_213",
+    "height": 20,
+    "url": "https://i0.hdslb.com/bfs/live/b159f90431148a973824f596288e7ad6a8db014b.png",
+    "width": 20
+  },
+  "[[天才鸽鸽表情包_过来挨骂]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/7d61c90393d4c628a48250d98b4a45857f01431c.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[天才鸽鸽表情包_过来挨骂]"
   }
 }

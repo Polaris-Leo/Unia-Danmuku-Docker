@@ -1313,7 +1313,7 @@ function DanmakuPage() {
                       )}
                       <span 
                         className={`username ${guardLevel > 0 ? `guard-${guardLevel}` : ''}`}
-                        onClick={(e) => handleUserClick(e, msg.user, msg.time)}
+                        onClick={(e) => handleUserClick(e, msg.user, msg.timestamp * 1000)}
                       >
                         {msg.user?.username || '未知用户'}
                       </span>
@@ -1382,7 +1382,7 @@ function DanmakuPage() {
                         />
                       </div>
                       <div className="sc-header-content">
-                        <div className="sc-name" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</div>
+                        <div className="sc-name" onClick={(e) => handleUserClick(e, msg.user, msg.time * 1000)}>{msg.user?.username}</div>
                         <div className="sc-price">CN¥{msg.price}</div>
                       </div>
                     </div>
@@ -1512,7 +1512,7 @@ function DanmakuPage() {
                         />
                       </div>
                       <div className="guard-card-content">
-                        <div className="guard-username" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</div>
+                        <div className="guard-username" onClick={(e) => handleUserClick(e, msg.user, msg.timestamp * 1000)}>{msg.user?.username}</div>
                         <div className="guard-price">CN¥{msg.price / 1000}</div>
                         <div className="guard-message">
                           开通{msg.giftName}，已陪伴主播 {msg.num || 1} 天
@@ -1541,7 +1541,7 @@ function DanmakuPage() {
                       </div>
                       <div className="gift-highlight-content">
                         <div className="gift-highlight-top">
-                          <span className="gift-highlight-username" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</span>
+                          <span className="gift-highlight-username" onClick={(e) => handleUserClick(e, msg.user, msg.timestamp * 1000)}>{msg.user?.username}</span>
                           <span className="gift-highlight-price-left">{priceDisplay}</span>
                         </div>
                         <div className="gift-highlight-name">
@@ -1572,7 +1572,7 @@ function DanmakuPage() {
                       alt=""
                       referrerPolicy="no-referrer"
                     />
-                    <span className="gift-username-small" onClick={(e) => handleUserClick(e, msg.user, msg.time)}>{msg.user?.username}</span>
+                    <span className="gift-username-small" onClick={(e) => handleUserClick(e, msg.user, msg.timestamp * 1000)}>{msg.user?.username}</span>
                     {smallIconSrc && (
                       <img className="gift-icon-small" src={smallIconSrc} alt="" referrerPolicy="no-referrer" />
                     )}
