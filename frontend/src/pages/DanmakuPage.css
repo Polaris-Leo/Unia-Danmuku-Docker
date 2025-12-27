@@ -99,6 +99,19 @@
   font-weight: 600;
 }
 
+/* Loading Spinner */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+  margin-right: 5px;
+  font-weight: bold;
+}
+
 .danmaku-dashboard .status-indicator.live {
   background-color: #e6f7ff;
   color: #1890ff;

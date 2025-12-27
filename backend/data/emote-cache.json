@@ -1048,5 +1048,23 @@
     "width": 20,
     "height": 20,
     "emoticon_unique": "upower_[胡桃Usa收藏集_灵魂出窍]"
+  },
+  "[溜了溜了]": {
+    "url": "https://i0.hdslb.com/bfs/live/d09f8edbdacb9dadab0c3c38ac34c1e145d075fa.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_4788550_41161"
+  },
+  "[记仇]": {
+    "url": "https://i0.hdslb.com/bfs/live/54fec3964b476e8aa1c273025523a16f7981325c.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_4788550_41159"
+  },
+  "[[胡桃Usa堕令时_捏捏]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/6f92ffba2c199aac15e61f714c7c7e0cc4ae6cb4.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[胡桃Usa堕令时_捏捏]"
   }
 }

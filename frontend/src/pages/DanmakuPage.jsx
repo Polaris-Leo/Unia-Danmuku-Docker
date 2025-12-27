@@ -230,6 +230,7 @@ function DanmakuPage() {
 
   const [loadedHistorySessions, setLoadedHistorySessions] = useState(new Set());
   const loadedHistorySessionsRef = useRef(loadedHistorySessions);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // 全量数据缓存 (用于滚动加载)
   const fullDanmakuListRef = useRef([]);
@@ -314,17 +315,27 @@ function DanmakuPage() {
   }, [liveStatus, liveStartTime]);
 
   // 自动滚动效果
+  // 使用 useRef 记录上一次列表的最后一个 ID，用于判断是否是新消息
+  const lastDanmakuIdRef = useRef(null);
+  const lastScIdRef = useRef(null);
+  const lastGiftIdRef = useRef(null);
+
   useEffect(() => {
+    if (danmakuList.length === 0) return;
+    const lastItem = danmakuList[danmakuList.length - 1];
+    const isNewMessage = lastItem.id !== lastDanmakuIdRef.current;
+    lastDanmakuIdRef.current = lastItem.id;
+
     if (isAutoScroll) {
       if (danmakuEndRef.current) {
-        // 使用 'auto' 行为进行即时滚动，以防止高消息量时的卡顿
         danmakuEndRef.current.scrollIntoView({ behavior: 'auto' });
       }
-    } else {
+    } else if (isNewMessage) {
+      // 只有当底部确实有新消息时才增加未读计数
       setUnreadCount(prev => prev + 1);
       setShowNewMsgButton(true);
     }
-  }, [danmakuList]);
+  }, [danmakuList, isAutoScroll]);
 
   // 处理滚动事件
   const handleScroll = (e) => {
@@ -533,26 +544,36 @@ function DanmakuPage() {
   };
 
   useEffect(() => {
+    if (scList.length === 0) return;
+    const lastItem = scList[scList.length - 1];
+    const isNewMessage = lastItem.id !== lastScIdRef.current;
+    lastScIdRef.current = lastItem.id;
+
     if (isScAutoScroll) {
       if (scEndRef.current) {
         scEndRef.current.scrollIntoView({ behavior: 'auto' });
       }
-    } else {
+    } else if (isNewMessage) {
       setScUnreadCount(prev => prev + 1);
       setShowScNewMsgButton(true);
     }
-  }, [scList]);
+  }, [scList, isScAutoScroll]);
 
   useEffect(() => {
+    if (giftList.length === 0) return;
+    const lastItem = giftList[giftList.length - 1];
+    const isNewMessage = lastItem.id !== lastGiftIdRef.current;
+    lastGiftIdRef.current = lastItem.id;
+
     if (isGiftAutoScroll) {
       if (giftEndRef.current) {
         giftEndRef.current.scrollIntoView({ behavior: 'auto' });
       }
-    } else {
+    } else if (isNewMessage) {
       setGiftUnreadCount(prev => prev + 1);
       setShowGiftNewMsgButton(true);
     }
-  }, [giftList]);
+  }, [giftList, isGiftAutoScroll]);
 
   // 设置逻辑
   const toggleOnlyCurrentSession = async () => {
@@ -599,9 +620,11 @@ function DanmakuPage() {
   const loadPreviousHistory = async () => {
     if (isLoadingHistoryRef.current) return;
     isLoadingHistoryRef.current = true;
+    setIsLoadingHistory(true);
 
     if (!roomId) {
         isLoadingHistoryRef.current = false;
+        setIsLoadingHistory(false);
         return;
     }
     try {
@@ -640,6 +663,9 @@ function DanmakuPage() {
         return;
       }
       
+      // 模拟网络延迟，让加载动画显示一会，提升体验
+      await new Promise(resolve => setTimeout(resolve, 800));
+
       // 加载该 session 数据
       const dataRes = await getHistoryData(roomId, targetSessionId);
       
@@ -688,19 +714,56 @@ function DanmakuPage() {
             id: `divider-end-${targetSessionId}-${generateId()}`
         };
         
-        // 合并到列表头部
-        setDanmakuList(prev => [startDivider, ...historyDanmaku, endDivider, ...prev]);
-        setScList(prev => [startDivider, ...historySc, endDivider, ...prev]);
+        // 更新完整列表 Ref (将历史数据添加到头部)
+        const newHistoryDanmaku = [startDivider, ...historyDanmaku, endDivider];
+        const newHistorySc = [startDivider, ...historySc, endDivider];
         
         const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-        setGiftList(prev => [startDivider, ...combinedGifts, endDivider, ...prev]);
+        const newHistoryGift = [startDivider, ...combinedGifts, endDivider];
+
+        fullDanmakuListRef.current = [...newHistoryDanmaku, ...fullDanmakuListRef.current];
+        fullScListRef.current = [...newHistorySc, ...fullScListRef.current];
+        fullGiftListRef.current = [...newHistoryGift, ...fullGiftListRef.current];
+
+        // 记录更新前的滚动位置
+        const danmakuScrollHeight = danmakuListRef.current ? danmakuListRef.current.scrollHeight : 0;
+        const danmakuScrollTop = danmakuListRef.current ? danmakuListRef.current.scrollTop : 0;
         
+        const scScrollHeight = scListRef.current ? scListRef.current.scrollHeight : 0;
+        const scScrollTop = scListRef.current ? scListRef.current.scrollTop : 0;
+
+        const giftScrollHeight = giftListRef.current ? giftListRef.current.scrollHeight : 0;
+        const giftScrollTop = giftListRef.current ? giftListRef.current.scrollTop : 0;
+
+        // 仅将一部分历史数据加载到视图中，避免一次性渲染过多
+        // 比如加载该场次的最后 100 条
+        setDanmakuList(prev => [...newHistoryDanmaku.slice(-100), ...prev]);
+        setScList(prev => [...newHistorySc.slice(-20), ...prev]);
+        setGiftList(prev => [...newHistoryGift.slice(-50), ...prev]);
+        
+        // 恢复滚动位置
+        // 使用 setTimeout 确保 DOM 更新后执行
+        setTimeout(() => {
+            if (danmakuListRef.current) {
+                const newHeight = danmakuListRef.current.scrollHeight;
+                danmakuListRef.current.scrollTop = danmakuScrollTop + (newHeight - danmakuScrollHeight);
+            }
+            if (scListRef.current) {
+                const newHeight = scListRef.current.scrollHeight;
+                scListRef.current.scrollTop = scScrollTop + (newHeight - scScrollHeight);
+            }
+            if (giftListRef.current) {
+                const newHeight = giftListRef.current.scrollHeight;
+                giftListRef.current.scrollTop = giftScrollTop + (newHeight - giftScrollHeight);
+            }
+        }, 0);
       }
       
     } catch (error) {
       console.error('加载历史数据失败:', error);
     } finally {
       isLoadingHistoryRef.current = false;
+      setIsLoadingHistory(false);
     }
   };
 
@@ -1589,10 +1652,15 @@ function DanmakuPage() {
           <div 
             className="column-body" 
             ref={danmakuListRef}
-            onScroll={handleScrollCheck}
+            onScroll={(e) => { handleScroll(e); handleScrollCheck(); }}
             onWheel={handleUserScrollInteraction}
             onTouchMove={handleUserScrollInteraction}
           >
+            {isLoadingHistory && (
+              <div style={{ textAlign: 'center', padding: '10px', color: '#999', fontSize: '12px' }}>
+                <span className="loading-spinner">⟳</span> 正在加载历史记录...
+              </div>
+            )}
             {danmakuList.map(msg => {
               // 处理分界线
               if (msg.type === 'divider') {
@@ -1712,6 +1780,11 @@ function DanmakuPage() {
             onWheel={handleScUserScrollInteraction}
             onTouchMove={handleScUserScrollInteraction}
           >
+            {isLoadingHistory && (
+              <div style={{ textAlign: 'center', padding: '10px', color: '#999', fontSize: '12px' }}>
+                <span className="loading-spinner">⟳</span> 正在加载历史记录...
+              </div>
+            )}
             {scList.map(msg => {
               if (msg.type === 'divider') {
                 return (
@@ -1782,6 +1855,11 @@ function DanmakuPage() {
             onWheel={handleGiftUserScrollInteraction}
             onTouchMove={handleGiftUserScrollInteraction}
           >
+            {isLoadingHistory && (
+              <div style={{ textAlign: 'center', padding: '10px', color: '#999', fontSize: '12px' }}>
+                <span className="loading-spinner">⟳</span> 正在加载历史记录...
+              </div>
+            )}
             {giftList.map(msg => {
               if (msg.type === 'divider') {
                 return (
