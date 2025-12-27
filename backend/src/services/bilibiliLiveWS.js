@@ -1038,6 +1038,17 @@ export class BilibiliLiveWS {
             }
         }
         
+        // Parse days from toast_msg
+        // 从 toast_msg 解析陪伴天数
+        // Example: "<%user%> 在主播xxx的直播间开通了舰长，今天是TA陪伴主播的第1天"
+        let days = 0;
+        if (toastData.toast_msg) {
+            const match = toastData.toast_msg.match(/陪伴主播的第(\d+)天/);
+            if (match) {
+                days = parseInt(match[1], 10);
+            }
+        }
+
         const toastGuard = {
           type: 'guard',
           user: {
@@ -1047,8 +1058,11 @@ export class BilibiliLiveWS {
           },
           guardLevel: toastData.guard_level,
           num: toastData.num,
+          unit: toastData.unit,
+          op_type: toastData.op_type,
           price: toastData.price, // 金瓜子数 (1000 = 1元)
           giftName: toastData.role_name, // 舰长/提督/总督
+          days: days,
           timestamp: Math.floor(Date.now() / 1000)
         };
 

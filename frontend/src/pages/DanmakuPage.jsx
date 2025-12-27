@@ -1878,7 +1878,8 @@ function DanmakuPage() {
                         <div className="guard-username" onClick={(e) => handleUserClick(e, msg.user, msg.timestamp * 1000)}>{msg.user?.username}</div>
                         <div className="guard-price">CN¥{msg.price / 1000}</div>
                         <div className="guard-message">
-                          开通{msg.giftName}，已陪伴主播 {msg.num || 1} 天
+                          <div>{msg.op_type === 2 || msg.op_type === 3 ? '续费' : '开通'}{msg.giftName} × {msg.num}{msg.unit || '个月'}</div>
+                          {msg.days > 0 && <div style={{ fontSize: '0.85em', opacity: 0.8, marginTop: '2px' }}>已陪伴主播 {msg.days} 天</div>}
                         </div>
                       </div>
                       <div className="guard-card-right">
