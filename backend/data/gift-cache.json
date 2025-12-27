@@ -1,1 +1,62 @@
-{}
+{
+  "30869": {
+    "name": "心动卡",
+    "icon": "https://i0.hdslb.com/bfs/live/9e8a419973840fae4e62089476a0c39d367788e1.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/b304a1ae04d10c25db87cfd8ec2a83bce1749322.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/9e8a419973840fae4e62089476a0c39d367788e1.webp"
+  },
+  "31036": {
+    "name": "小花花",
+    "icon": "https://i0.hdslb.com/bfs/live/28357ba4cd566418730ca29da2c552efa7e4a390.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/5126973892625f3a43a8290be6b625b5e54261a5.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/28357ba4cd566418730ca29da2c552efa7e4a390.webp"
+  },
+  "31039": {
+    "name": "牛哇牛哇",
+    "icon": "https://i0.hdslb.com/bfs/live/7571c8bdfcb65f9b00ab1307b2c86630f0d00859.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/91ac8e35dd93a7196325f1e2052356e71d135afb.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/7571c8bdfcb65f9b00ab1307b2c86630f0d00859.webp"
+  },
+  "31164": {
+    "name": "粉丝团灯牌",
+    "icon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp"
+  },
+  "33988": {
+    "name": "人气票",
+    "icon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/7164c955ec0ed7537491d189b821cc68f1bea20d.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp"
+  },
+  "34001": {
+    "name": "粉丝团灯牌",
+    "icon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp"
+  },
+  "34144": {
+    "name": "盛典门票",
+    "icon": "https://i0.hdslb.com/bfs/live/af41e45d22833f31e53005bc12d3364909b96ae0.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/bb000147d5214593be0c5ca00f8f47ddc8a52251.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/af41e45d22833f31e53005bc12d3364909b96ae0.webp"
+  },
+  "34408": {
+    "name": "药葫芦",
+    "icon": "https://i0.hdslb.com/bfs/live/d46863388435d4d29e332f0f548403b4588fbd34.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/3d7b566664cd95c442e582c1c10e70582acbaf33.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/d46863388435d4d29e332f0f548403b4588fbd34.webp"
+  },
+  "35347": {
+    "name": "破壳萌龙",
+    "icon": "https://i0.hdslb.com/bfs/live/c1f29d9e96aed42c7c232d9b35736337e25be492.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/821e560089fb42b2ef07230d96dc34abe1390970.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/c1f29d9e96aed42c7c232d9b35736337e25be492.webp"
+  },
+  "35358": {
+    "name": "云间嬉戏",
+    "icon": "https://i0.hdslb.com/bfs/live/ad922a4af511ea4258d2576912ec4dd3cfce2757.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/54c66576898b11a56bf43bf38f6a99ab92958e40.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/ad922a4af511ea4258d2576912ec4dd3cfce2757.webp"
+  }
+}

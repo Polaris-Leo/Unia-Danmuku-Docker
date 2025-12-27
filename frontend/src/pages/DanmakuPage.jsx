@@ -19,18 +19,18 @@ const UserDetailPopup = ({ user, position, onClose }) => {
 
   if (!user) return null;
 
-  // Calculate position to keep it on screen
+  // 计算位置以保持在屏幕内
   const style = {
     top: position.y,
     left: position.x,
   };
   
-  // Adjust if going off screen
+  // 如果超出屏幕则调整
   if (position.x + 280 > window.innerWidth) {
     style.left = window.innerWidth - 290;
   }
   if (position.y + 350 > window.innerHeight) {
-    style.top = Math.max(10, position.y - 350); // Flip up
+    style.top = Math.max(10, position.y - 350); // 向上翻转
   }
 
   return (
@@ -94,18 +94,18 @@ function DanmakuPage() {
   const [roomId, setRoomId] = useState('');
   const [connected, setConnected] = useState(false);
   
-  // History Mode State
+  // 历史模式状态
   const [isHistoryMode, setIsHistoryMode] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historySessions, setHistorySessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
 
-  // Lists for different columns
+  // 不同列的列表数据
   const [danmakuList, setDanmakuList] = useState([]);
   const [scList, setScList] = useState([]);
   const [giftList, setGiftList] = useState([]);
   
-  // Stats
+  // 统计数据
   const [watchedCount, setWatchedCount] = useState(0);
   const [rankCount, setRankCount] = useState(0);
   const [likeCount, setLikeCount] = useState(0);
@@ -115,21 +115,21 @@ function DanmakuPage() {
   const [fansClubCount, setFansClubCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
   
-  // Live Status
-  const [liveStatus, setLiveStatus] = useState(0); // 0: Offline, 1: Live, 2: Round
+  // 直播状态
+  const [liveStatus, setLiveStatus] = useState(0); // 0: 未开播, 1: 直播中, 2: 轮播
   const [liveStartTime, setLiveStartTime] = useState(0);
   const [liveDuration, setLiveDuration] = useState('00:00:00');
   
-  // Scroll State
+  // 滚动状态
   const [isAutoScroll, setIsAutoScroll] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNewMsgButton, setShowNewMsgButton] = useState(false);
 
-  // SC & Gift Scroll State
+  // SC和礼物滚动状态
   const [isScAutoScroll, setIsScAutoScroll] = useState(true);
   const [isGiftAutoScroll, setIsGiftAutoScroll] = useState(true);
   
-  // Settings State
+  // 设置状态
   const [showSettings, setShowSettings] = useState(false);
   const [onlyCurrentSession, setOnlyCurrentSession] = useState(() => {
     const saved = localStorage.getItem('onlyCurrentSession');
@@ -137,7 +137,7 @@ function DanmakuPage() {
   });
   const [loadedHistorySessions, setLoadedHistorySessions] = useState(new Set());
 
-  // User Popup State
+  // 用户弹窗状态
   const [selectedUser, setSelectedUser] = useState(null);
   const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 });
 
@@ -152,7 +152,9 @@ function DanmakuPage() {
   };
 
   const wsRef = useRef(null);
-  const danmakuListRef = useRef(null); // Ref for the scroll container
+  const reconnectTimeoutRef = useRef(null);
+  const isManualDisconnect = useRef(false);
+  const danmakuListRef = useRef(null); // 滚动容器的引用
   const scListRef = useRef(null);
   const giftListRef = useRef(null);
   const danmakuEndRef = useRef(null);
@@ -172,7 +174,7 @@ function DanmakuPage() {
     };
   }, []);
 
-  // Live Duration Timer
+  // 直播时长计时器
   useEffect(() => {
     let timer;
     if (liveStatus === 1 && liveStartTime > 0) {
@@ -189,7 +191,7 @@ function DanmakuPage() {
         }
       };
       
-      updateDuration(); // Initial update
+      updateDuration(); // 初始更新
       timer = setInterval(updateDuration, 1000);
     } else {
       setLiveDuration('00:00:00');
@@ -200,11 +202,11 @@ function DanmakuPage() {
     };
   }, [liveStatus, liveStartTime]);
 
-  // Auto-scroll effects
+  // 自动滚动效果
   useEffect(() => {
     if (isAutoScroll) {
       if (danmakuEndRef.current) {
-        // Use 'auto' behavior for instant scrolling to prevent lag with high message volume
+        // 使用 'auto' 行为进行即时滚动，以防止高消息量时的卡顿
         danmakuEndRef.current.scrollIntoView({ behavior: 'auto' });
       }
     } else {
@@ -213,28 +215,26 @@ function DanmakuPage() {
     }
   }, [danmakuList]);
 
-  // Handle scroll event
+  // 处理滚动事件
   const handleScroll = (e) => {
     if (!danmakuListRef.current) return;
     
-    // Only check for manual scroll if it's a user-initiated scroll event
-    // We can infer this if the scroll happened while auto-scroll was ON, 
-    // but we are now NOT at the bottom.
+    // 仅在用户主动滚动时检查手动滚动
+    // 我们可以通过检查是否在自动滚动开启时发生滚动，但现在不在底部来推断
     
     const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
     
-    // If user manually scrolls up (deltaY < 0 usually, but here we check position)
-    // We need to be careful not to disable auto-scroll just because a new message arrived 
-    // and pushed the bottom down before the auto-scroll effect ran.
+    // 如果用户手动向上滚动（通常 deltaY < 0，但这里我们检查位置）
+    // 我们需要小心，不要仅仅因为新消息到达并在自动滚动效果运行之前将底部向下推而禁用自动滚动。
     
-    // Strategy: Only disable auto-scroll if the user is significantly far from bottom
-    // AND we are not currently in the process of auto-scrolling (which is hard to track perfectly in React state).
-    // A better approach for "manual only":
-    // Use the `onWheel` or `onTouchMove` events to detect user interaction.
+    // 策略：仅当用户距离底部明显较远时才禁用自动滚动
+    // 并且我们当前没有处于自动滚动过程中（这在 React 状态中很难完美跟踪）。
+    // 对于“仅手动”更好的方法：
+    // 使用 `onWheel` 或 `onTouchMove` 事件来检测用户交互。
   };
 
-  // Detect manual user interaction to pause auto-scroll
+  // 检测用户手动交互以暂停自动滚动
   const handleUserScrollInteraction = () => {
     const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
@@ -244,7 +244,7 @@ function DanmakuPage() {
     }
   };
 
-  // Re-enable auto-scroll if user scrolls back to bottom manually
+  // 如果用户手动滚动回底部，重新启用自动滚动
   const handleScrollCheck = () => {
      if (!danmakuListRef.current) return;
      const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
@@ -257,7 +257,7 @@ function DanmakuPage() {
      }
   };
 
-  // SC Scroll Handlers
+  // SC 滚动处理
   const handleScUserScrollInteraction = () => {
     if (!scListRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scListRef.current;
@@ -272,7 +272,7 @@ function DanmakuPage() {
     if (isAtBottom) setIsScAutoScroll(true);
   };
 
-  // Gift Scroll Handlers
+  // 礼物滚动处理
   const handleGiftUserScrollInteraction = () => {
     if (!giftListRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = giftListRef.current;
@@ -287,7 +287,7 @@ function DanmakuPage() {
     if (isAtBottom) setIsGiftAutoScroll(true);
   };
 
-  // Scroll to bottom manually
+  // 手动滚动到底部
   const scrollToBottom = () => {
     setIsAutoScroll(true);
     setUnreadCount(0);
@@ -309,7 +309,7 @@ function DanmakuPage() {
     }
   }, [giftList, isGiftAutoScroll]);
 
-  // Settings Logic
+  // 设置逻辑
   const toggleOnlyCurrentSession = async () => {
     const newValue = !onlyCurrentSession;
     setOnlyCurrentSession(newValue);
@@ -433,10 +433,10 @@ function DanmakuPage() {
     }
   };
 
-  // Initial load of history if setting is off
+  // 如果设置关闭，则初始加载历史记录
   useEffect(() => {
     if (roomId && !onlyCurrentSession && loadedHistorySessions.size === 0) {
-      // Delay slightly to allow live_status to arrive if connected
+      // 稍微延迟以允许 live_status 到达（如果已连接）
       const timer = setTimeout(() => {
         loadPreviousHistory();
       }, 1000);
@@ -456,7 +456,7 @@ function DanmakuPage() {
     }
   };
 
-  // Auto-connect if roomId is in URL
+  // 如果 URL 中有 roomId，则自动连接
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlRoomId = params.get('roomId');
@@ -465,7 +465,7 @@ function DanmakuPage() {
       setRoomId(urlRoomId);
       connectRoom(urlRoomId);
     }
-    // If no roomId in URL, do nothing (show empty frame)
+    // 如果 URL 中没有 roomId，则不执行任何操作（显示空框架）
   }, []);
 
   const connectRoom = (targetRoomId) => {
@@ -477,11 +477,19 @@ function DanmakuPage() {
 
     localStorage.setItem('lastRoomId', idToUse);
 
+    // 重置主动断开标志
+    isManualDisconnect.current = false;
+    // 清除可能存在的重连定时器
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
     if (wsRef.current) {
       wsRef.current.close();
     }
 
-    // Use window.location.hostname to allow connection from other devices on the same network
+    // 使用 window.location.hostname 允许同一网络上的其他设备连接
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsHost = window.location.host; // Includes port if present
     const ws = new WebSocket(`${wsProtocol}//${wsHost}/ws/danmaku?roomId=${idToUse}`);
@@ -489,7 +497,7 @@ function DanmakuPage() {
     ws.onopen = () => {
       console.log('WebSocket连接成功');
       setConnected(true);
-      // Clear lists on new connection
+      // 新连接时清空列表
       setDanmakuList([]);
       setScList([]);
       setGiftList([]);
@@ -512,12 +520,25 @@ function DanmakuPage() {
     ws.onclose = () => {
       console.log('WebSocket连接关闭');
       setConnected(false);
+      wsRef.current = null;
+
+      if (!isManualDisconnect.current) {
+        console.log('非主动断开，3秒后尝试重连...');
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectRoom(idToUse);
+        }, 3000);
+      }
     };
 
     wsRef.current = ws;
   };
 
   const disconnect = () => {
+    isManualDisconnect.current = true;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
@@ -525,7 +546,7 @@ function DanmakuPage() {
     setConnected(false);
   };
 
-  // History Functions
+  // 历史记录功能
   const openHistoryModal = async () => {
     if (!roomId) return;
     try {
@@ -542,32 +563,32 @@ function DanmakuPage() {
 
   const loadHistorySession = async (sessionId) => {
     try {
-      // 1. Disconnect live connection
+      // 1. 断开直播连接
       disconnect();
       setIsHistoryMode(true);
       setCurrentSessionId(sessionId);
       setShowHistoryModal(false);
       
-      // 2. Clear current lists
+      // 2. 清空当前列表
       setDanmakuList([]);
       setScList([]);
       setGiftList([]);
       
-      // 3. Fetch history data
+      // 3. 获取历史数据
       const response = await getHistoryData(roomId, sessionId);
       if (response.success) {
         const { danmaku, superchat, gift, guard } = response.data;
         
-        // Process and set data
+        // 处理并设置数据
         const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
         const historySc = (superchat || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
         const historyGift = (gift || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
         const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
 
-        setDanmakuList(historyDanmaku); // Load all history, not just last 200
+        setDanmakuList(historyDanmaku); // 加载所有历史记录，而不仅仅是最后 200 条
         setScList(historySc);
         
-        // Merge gifts and guards
+        // 合并礼物和舰长
         const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => {
           const timeA = a.timestamp || 0;
           const timeB = b.timestamp || 0;
@@ -575,7 +596,7 @@ function DanmakuPage() {
         });
         setGiftList(combinedGifts);
         
-        // Scroll to bottom after loading
+        // 加载后滚动到底部
         setTimeout(() => {
             if (danmakuEndRef.current) danmakuEndRef.current.scrollIntoView();
             if (scEndRef.current) scEndRef.current.scrollIntoView();
@@ -619,6 +640,7 @@ function DanmakuPage() {
         const itemFingerprint = getFingerprint(item);
         if (itemFingerprint === fingerprint) return true;
         // Check if it matches the last stacked message in a combo
+        // 检查是否匹配连击中的最后一条堆叠消息
         if (item.lastFingerprint === fingerprint) return true;
         return false;
       });
@@ -646,31 +668,43 @@ function DanmakuPage() {
       case 'gift':
         setGiftList(prev => {
           // 1. Check for duplicates first (including against lastFingerprint)
+          // 1. 首先检查重复项（包括针对 lastFingerprint）
           if (isDuplicate(prev, msg, 'gift')) return prev;
 
           // 2. Check for stacking (Combo)
+          // 2. 检查堆叠（连击）
           const lastItem = prev[prev.length - 1];
           // Only stack if it's a gift (not divider/guard) and same user/giftId
+          // 仅当是礼物（非分界线/舰长）且是同一用户/同一礼物ID时才堆叠
           if (lastItem && lastItem.type === 'gift' && 
               lastItem.user?.uid === msg.user?.uid && 
               lastItem.giftId === msg.giftId) {
             
             // Check time window (30 seconds)
+            // 检查时间窗口（30秒）
             // msg.timestamp is usually unix timestamp (seconds) or ms. 
             // Assuming consistent units.
+            // msg.timestamp 通常是 Unix 时间戳（秒）或毫秒。假设单位一致。
             const timeDiff = Math.abs((msg.timestamp || 0) - (lastItem.timestamp || 0));
             
             // Threshold: 30 seconds. 
+            // 阈值：30秒。
             // If timestamp is large (> 10000000000), it's ms. If < 10000000000, it's seconds.
+            // 如果时间戳很大 (> 10000000000)，则是毫秒。如果 < 10000000000，则是秒。
             // Bilibili usually uses seconds. 30s.
+            // Bilibili 通常使用秒。30秒。
             // If it happens to be ms, 30 is 0.03s, which is too strict.
+            // 如果恰好是毫秒，30 就是 0.03秒，太严格了。
             // Let's assume seconds. If diff is huge, it won't stack.
+            // 让我们假设是秒。如果差异巨大，则不会堆叠。
             // To be safe, we can check magnitude.
+            // 为了安全起见，我们可以检查数量级。
             const isMs = (msg.timestamp || 0) > 10000000000;
             const threshold = isMs ? 30000 : 30;
 
             if (timeDiff <= threshold) {
               // Stack it!
+              // 堆叠它！
               const currentNum = msg.num || 1;
               const previousTotal = lastItem.totalNum || lastItem.num || 1;
               const newTotal = previousTotal + currentNum;
@@ -679,14 +713,18 @@ function DanmakuPage() {
 
               const updatedItem = {
                 ...lastItem,
-                num: currentNum, // The latest batch count
-                totalNum: newTotal, // Accumulated count
-                timestamp: msg.timestamp, // Update time to extend window
-                lastFingerprint: fingerprint, // Store for duplicate check
+                num: currentNum, // The latest batch count // 最新批次的数量
+                totalNum: newTotal, // Accumulated count // 累计数量
+                timestamp: msg.timestamp, // Update time to extend window // 更新时间以延长窗口
+                lastFingerprint: fingerprint, // Store for duplicate check // 存储用于重复检查
                 // Keep original ID to maintain React key stability or update it?
+                // 保持原始 ID 以维持 React key 稳定性还是更新它？
                 // If we update ID, it might flash. Let's keep ID but force update.
+                // 如果我们更新 ID，可能会闪烁。让我们保持 ID 但强制更新。
                 // Actually, we need to trigger re-render.
+                // 实际上，我们需要触发重新渲染。
                 // Creating a new object reference is enough for React state.
+                // 创建新的对象引用对于 React 状态来说就足够了。
               };
               
               return [...prev.slice(0, -1), updatedItem];
@@ -694,6 +732,7 @@ function DanmakuPage() {
           }
 
           // 3. New Item
+          // 3. 新项目
           const newItem = { 
             ...msg, 
             totalNum: msg.num || 1,
@@ -703,6 +742,7 @@ function DanmakuPage() {
         });
         
         // Also add to Danmaku list (optional: do we stack there too? Probably not requested, keep simple)
+        // 也添加到弹幕列表（可选：我们在那里也堆叠吗？可能没有要求，保持简单）
         setDanmakuList(prev => {
           if (isDuplicate(prev, msg, 'gift')) return prev;
           return [...prev, msg].slice(-maxCount);
@@ -750,6 +790,7 @@ function DanmakuPage() {
         setScList(historySc.slice(-100));
         
         // Merge gifts and guards, then sort by timestamp
+        // 合并礼物和舰长，然后按时间戳排序
         const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => {
           const timeA = a.timestamp || 0;
           const timeB = b.timestamp || 0;
@@ -764,6 +805,7 @@ function DanmakuPage() {
   };
 
   // Helper: Render content with emojis
+  // 辅助函数：渲染带有表情符号的内容
   const renderContentWithEmoji = (content, emots) => {
     if (!emots || Object.keys(emots).length === 0) {
       return content;
@@ -826,33 +868,44 @@ function DanmakuPage() {
   };
 
   // Helper: Get SC Color
+  // 辅助函数：获取 SC 颜色
   const getSCColor = (price) => {
     // Colors: { main: Body Color, header: Header Color, text: Text Color }
+    // 颜色：{ main: 主体颜色, header: 头部颜色, text: 文本颜色 }
     
     // Special Amounts (Purple Theme)
-    if (price === 77777) return { main: '#7e00a8', header: '#9510c2', text: '#fff' }; // Deepest Purple
-    if (price === 17777) return { main: '#900bbd', header: '#a825d1', text: '#fff' }; // Deep Purple
-    if (price === 7777) return { main: '#b645da', header: '#c860e6', text: '#fff' }; // Medium Deep Purple
-    if (price === 777) return { main: '#d280f0', header: '#dd99f4', text: '#fff' }; // Medium Light Purple
-    if (price === 177) return { main: '#ebb8fc', header: '#f2cafd', text: '#333' }; // Light Purple (Dark Text)
-    if (price === 77) return { main: '#f5d4ff', header: '#fae5ff', text: '#333' }; // Lightest Purple (Dark Text)
+    // 特殊金额（紫色主题）
+    if (price === 77777) return { main: '#7e00a8', header: '#9510c2', text: '#fff' }; // Deepest Purple // 最深紫色
+    if (price === 17777) return { main: '#900bbd', header: '#a825d1', text: '#fff' }; // Deep Purple // 深紫色
+    if (price === 7777) return { main: '#b645da', header: '#c860e6', text: '#fff' }; // Medium Deep Purple // 中深紫色
+    if (price === 777) return { main: '#d280f0', header: '#dd99f4', text: '#fff' }; // Medium Light Purple // 中浅紫色
+    if (price === 177) return { main: '#ebb8fc', header: '#f2cafd', text: '#333' }; // Light Purple (Dark Text) // 浅紫色（深色文本）
+    if (price === 77) return { main: '#f5d4ff', header: '#fae5ff', text: '#333' }; // Lightest Purple (Dark Text) // 最浅紫色（深色文本）
 
     // Standard Bilibili / OBS Tiers
+    // 标准 Bilibili / OBS 层级
     // >= 2000: Dark Red
+    // >= 2000: 深红色
     if (price >= 2000) return { main: '#B01E34', header: '#FFD4D7', text: '#fff' };
     // >= 1000: Red
+    // >= 1000: 红色
     if (price >= 1000) return { main: '#E54D4D', header: '#FFD9D9', text: '#fff' };
     // >= 500: Orange
+    // >= 500: 橙色
     if (price >= 500) return { main: '#E09443', header: '#FFEBD6', text: '#fff' };
     // >= 100: Yellow
-    if (price >= 100) return { main: '#E2B52B', header: '#FFF7E3', text: '#333' }; // Yellow usually needs dark text
+    // >= 100: 黄色
+    if (price >= 100) return { main: '#E2B52B', header: '#FFF7E3', text: '#333' }; // Yellow usually needs dark text // 黄色通常需要深色文本
     // >= 50: Cyan
+    // >= 50: 青色
     if (price >= 50) return { main: '#427D9E', header: '#ECF6F9', text: '#fff' };
     // < 50: Blue
+    // < 50: 蓝色
     return { main: '#2A60B2', header: '#EDF5FF', text: '#fff' };
   };
 
   // Helper: Get Relative Time
+  // 辅助函数：获取相对时间
   const getRelativeTime = (timestamp) => {
     const now = Date.now() / 1000;
     const diff = now - timestamp;
@@ -864,15 +917,17 @@ function DanmakuPage() {
   };
 
   // Helper: Get Medal Color based on level (Updated to match official snippets)
+  // 辅助函数：根据等级获取勋章颜色（更新以匹配官方片段）
   const getMedalColor = (level) => {
-    if (level >= 41) return '#9066d3'; // Purple
-    if (level >= 31) return '#6892ff'; // Blue
-    if (level >= 21) return '#5dc0f7'; // Light Blue
-    if (level >= 11) return '#cf86b2'; // Pink
-    return '#727bb5'; // Blue Grey (1-10)
+    if (level >= 41) return '#9066d3'; // Purple // 紫色
+    if (level >= 31) return '#6892ff'; // Blue // 蓝色
+    if (level >= 21) return '#5dc0f7'; // Light Blue // 浅蓝色
+    if (level >= 11) return '#cf86b2'; // Pink // 粉色
+    return '#727bb5'; // Blue Grey (1-10) // 蓝灰色 (1-10)
   };
 
   // Calculate Totals
+  // 计算总计
   const scTotal = React.useMemo(() => {
     return scList.reduce((acc, curr) => {
       if (curr.type === 'divider') return acc;
@@ -885,11 +940,13 @@ function DanmakuPage() {
       if (curr.type === 'divider') return acc;
       
       // Guard (price is in gold/1000)
+      // 舰长（价格单位为金瓜子/1000）
       if (curr.type === 'guard') {
         return acc + (Number(curr.price) || 0) / 1000;
       }
       
       // Gift (gold only)
+      // 礼物（仅限金瓜子）
       if (curr.coinType === 'gold') {
         return acc + (Number(curr.price) || 0) / 1000;
       }
@@ -904,7 +961,7 @@ function DanmakuPage() {
 
   return (
     <div className="danmaku-dashboard">
-      {/* Header */}
+      {/* 头部 */}
       <div className="danmaku-header">
         <div className="header-left">
           <div className="logo-area" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: '20px' }}>
@@ -917,7 +974,7 @@ function DanmakuPage() {
 
           {(connected || isHistoryMode) && (
             <div className="stats-bar" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              {/* Anchor Info */}
+              {/* 主播信息 */}
               <div className="stat-item anchor-info" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <img 
                   src={anchorFace || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'} 
@@ -928,7 +985,7 @@ function DanmakuPage() {
                 {/* <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{anchorName}</span> */}
               </div>
 
-              {/* Guard Count */}
+              {/* 舰长数量 */}
               <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>大航海</span>
                 <NumberFlow 
@@ -944,7 +1001,7 @@ function DanmakuPage() {
                 />
               </div>
 
-              {/* Fans Club / Popularity */}
+              {/* 粉丝团 / 人气 */}
               <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>粉丝团</span>
                 <NumberFlow 
@@ -960,7 +1017,7 @@ function DanmakuPage() {
                 />
               </div>
 
-              {/* Rank Count */}
+              {/* 高能榜人数 */}
               <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>高能榜</span>
                 <NumberFlow 
@@ -976,15 +1033,15 @@ function DanmakuPage() {
                 />
               </div>
 
-              {/* Live Duration */}
+              {/* 直播时长 */}
               <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>时长</span>
                 <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#333', lineHeight: '14px' }}>{liveDuration}</span>
               </div>
               
-              {/* Ticker Placeholder (Optional, based on image) */}
+              {/* 跑马灯占位符（可选，基于图片） */}
               <div className="ticker-placeholder" style={{ display: 'flex', gap: '5px', marginLeft: '10px' }}>
-                {/* Can be populated with recent SC/Gift avatars later */}
+                {/* 稍后可以用最近的 SC/礼物头像填充 */}
               </div>
             </div>
           )}
@@ -1003,7 +1060,7 @@ function DanmakuPage() {
             )}
           </div>
 
-          {/* Settings Button (Moved to far right) */}
+          {/* 设置按钮（移至最右侧） */}
           <div style={{ position: 'relative', marginLeft: '10px' }}>
             <button className="settings-btn" onClick={() => setShowSettings(!showSettings)} title="设置">
               <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
@@ -1023,13 +1080,13 @@ function DanmakuPage() {
                   <div className="settings-content">
                     <div className="setting-item">
                       <div className="setting-label">仅查看当前场次</div>
-                      <label className="toggle-switch">
+                      <label className="dm-toggle-switch">
                         <input 
                           type="checkbox" 
                           checked={onlyCurrentSession} 
                           onChange={toggleOnlyCurrentSession}
                         />
-                        <span className="slider"></span>
+                        <span className="dm-slider"></span>
                       </label>
                     </div>
                     {!onlyCurrentSession && (
@@ -1045,9 +1102,9 @@ function DanmakuPage() {
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* 主要内容 */}
       <div className="danmaku-content-area">
-        {/* Column 1: Danmaku */}
+        {/* 第一列：弹幕 */}
         <div className="danmaku-column" style={{ position: 'relative' }}>
           <div className="column-header">
             <span className="column-count">{danmakuList.length} 条弹幕</span>
@@ -1060,7 +1117,7 @@ function DanmakuPage() {
             onTouchMove={handleUserScrollInteraction}
           >
             {danmakuList.map(msg => {
-              // Handle Divider
+              // 处理分界线
               if (msg.type === 'divider') {
                 return (
                   <div key={msg.id} className="danmaku-divider">
@@ -1069,12 +1126,12 @@ function DanmakuPage() {
                 );
               }
 
-              // Filter out SC, Gift, and Guard messages from the main danmaku column
+              // 从主弹幕列中过滤掉 SC、礼物和舰长消息
               if (msg.type === 'superchat' || msg.type === 'gift' || msg.type === 'guard') {
                 return null;
               }
 
-              // Normal Danmaku (Simple Style)
+              // 普通弹幕（简单样式）
               const guardLevel = msg.user?.guardLevel || 0;
               
               return (
@@ -1089,7 +1146,7 @@ function DanmakuPage() {
                   
                   <div className="content-area">
                     <div className="username-line">
-                      {/* Fan Badge */}
+                      {/* 粉丝勋章 */}
                       {msg.medal && (
                         <div 
                           className={`fans-medal ${guardLevel > 0 ? 'has-guard' : ''}`}
@@ -1121,7 +1178,7 @@ function DanmakuPage() {
                         </div>
                       )}
                       
-                      {/* Standalone Guard Icon (only if no medal) */}
+                      {/* 独立舰长图标（仅当没有勋章时） */}
                       {!msg.medal && guardLevel > 0 && (
                         <img 
                           src={
@@ -1159,7 +1216,7 @@ function DanmakuPage() {
           )}
         </div>
 
-        {/* Column 2: Super Chat */}
+        {/* 第二列：醒目留言 */}
         <div className="danmaku-column">
           <div className="column-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1222,7 +1279,7 @@ function DanmakuPage() {
           </div>
         </div>
 
-        {/* Column 3: Gifts & Guards */}
+        {/* 第三列：礼物和舰长 */}
         <div className="danmaku-column">
           <div className="column-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1248,54 +1305,65 @@ function DanmakuPage() {
               }
               const isGuard = msg.type === 'guard';
               
-              // Calculate Price in CNY
-              // If coinType is 'gold', price is usually in 1000 = 1 CNY (or 100 = 0.1 CNY). 
-              // Standard Bilibili API: price is unit price. 
-              // For paid gifts (gold), 1000 units = 1 CNY.
-              // For free gifts (silver), we treat value as low/0 for display purposes or display raw.
+              // 计算人民币价格
+              // 如果硬币类型是 'gold'，价格通常是 1000 = 1 元 (或 100 = 0.1 元)。
+              // 标准 Bilibili API：价格是单价。
+              // 对于付费礼物 (gold)，1000 单位 = 1 元。
+              // 对于免费礼物 (silver)，我们将其值视为低/0 用于显示目的或显示原始值。
               
               let priceDisplay = '';
               let priceValue = 0;
+              
+              // 确定显示的有效数量
+              const count = msg.totalNum || msg.num || 1;
 
               if (msg.coinType === 'gold') {
                 priceValue = msg.price / 1000;
-                priceDisplay = `CN¥${priceValue}`;
+                // 总价
+                const total = priceValue * count;
+                const totalFixed = parseFloat(total.toFixed(2)); 
+                priceDisplay = `CN¥${totalFixed}`;
               } else if (msg.coinType === 'silver') {
-                priceValue = 0; // Treat silver as 0 CNY for threshold
-                priceDisplay = `${msg.price}银瓜子`;
+                priceValue = 0; 
+                const total = msg.price * count;
+                priceDisplay = `${total}银瓜子`;
               } else {
-                // Fallback
                 priceValue = msg.price; 
-                priceDisplay = `¥${msg.price}`;
+                const total = msg.price * count;
+                priceDisplay = `¥${total}`;
               }
 
-              // Threshold for large card display: Guard or Price >= 9.9 CNY
+              // 大卡片显示的阈值：舰长 或 价格 >= 9.9 元
               const isLargeCard = isGuard || (msg.coinType === 'gold' && priceValue >= 9.9);
+
+              if (!isLargeCard && msg.coinType === 'gold') {
+                priceDisplay = priceDisplay.replace('CN', '');
+              }
               
               if (isLargeCard) {
-                // Determine background color
-                let bgColor = '#23ade5'; // Default Blue (Guard 3 / Captain)
+                // 确定背景颜色
+                let bgColor = '#23ade5'; // 默认蓝色 (舰长 3 / 舰长)
                 let textColor = '#fff';
 
                 if (isGuard) {
                    if (msg.guardLevel === 3) {
-                     bgColor = '#23ade5'; // Captain (Blue)
+                     bgColor = '#23ade5'; // 舰长 (蓝色)
                      textColor = '#fff';
                    }
                    if (msg.guardLevel === 2) {
-                     bgColor = '#ae5cff'; // Admiral (Pale Purple)
+                     bgColor = '#ae5cff'; // 提督 (淡紫色)
                      textColor = '#fff';
                    }
                    if (msg.guardLevel === 1) {
-                     bgColor = '#ff7b52'; // Governor (Pale Orange-Red)
+                     bgColor = '#ff7b52'; // 总督 (淡橙红色)
                      textColor = '#fff';
                    }
                 } else {
-                   bgColor = '#42B25F'; // Green for Gifts >= 10
+                   bgColor = '#42B25F'; // 礼物 >= 10 的绿色
                 }
 
-                // Determine Icon
-                let iconSrc = msg.giftIconStatic || msg.giftIcon; // Prefer static as requested
+                // 确定图标
+                let iconSrc = msg.giftIconStatic || msg.giftIcon; // 优先使用静态图标
                 if (isGuard) {
                    if (msg.guardLevel === 3) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/captain-Bjw5Byb5.png';
                    else if (msg.guardLevel === 2) iconSrc = 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/supervisor-u43ElIjU.png';
@@ -1303,7 +1371,7 @@ function DanmakuPage() {
                 }
 
                 if (isGuard) {
-                  // Guard Card Layout (Reference: Blue Card)
+                  // 舰长卡片布局 (参考：蓝卡)
                   return (
                     <div 
                       key={msg.id} 
@@ -1331,7 +1399,7 @@ function DanmakuPage() {
                     </div>
                   );
                 } else {
-                  // Large Gift Card Layout (Reference: Green Card)
+                  // 大礼物卡片布局 (参考：绿卡)
                   return (
                     <div 
                       key={msg.id} 
@@ -1353,11 +1421,8 @@ function DanmakuPage() {
                         </div>
                         <div className="gift-highlight-name">
                           {msg.giftName}
-                          <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>X{msg.num}</span>
-                          {msg.totalNum > msg.num && (
-                            <span style={{ marginLeft: '4px', opacity: 0.9 }}>
-                              (X{msg.totalNum})
-                            </span>
+                          {count > 1 && (
+                            <span style={{ marginLeft: '8px', fontWeight: 'normal' }}>X{count}</span>
                           )}
                         </div>
                       </div>
@@ -1370,8 +1435,8 @@ function DanmakuPage() {
                   );
                 }
               } else {
-                // Small Compact Row (< 10)
-                // Prefer static icon for small row
+                // 小型紧凑行 (< 10)
+                // 小行优先使用静态图标
                 const smallIconSrc = msg.giftIconStatic || msg.giftIcon;
                 
                 return (
@@ -1387,15 +1452,12 @@ function DanmakuPage() {
                       <img className="gift-icon-small" src={smallIconSrc} alt="" />
                     )}
                     <span className="gift-name-small">{msg.giftName}</span>
-                    <span className="gift-price-small">{priceDisplay}</span>
-                    <span className="gift-count-small" style={{ marginLeft: '8px', fontWeight: 'bold', color: '#ff6699' }}>
-                      X{msg.num}
-                      {msg.totalNum > msg.num && (
-                        <span style={{ marginLeft: '4px', color: '#ff6699' }}>
-                          (X{msg.totalNum})
-                        </span>
-                      )}
-                    </span>
+                    {count > 1 && (
+                      <span className="gift-count-small" style={{ marginLeft: '2px', fontWeight: 'normal', color: '#ff6699' }}>
+                        X{count}
+                      </span>
+                    )}
+                    <span className="gift-price-small" style={{ marginLeft: '2px' }}>{priceDisplay}</span>
                   </div>
                 );
               }
@@ -1405,7 +1467,7 @@ function DanmakuPage() {
         </div>
       </div>
 
-      {/* History Selection Modal */}
+      {/* 历史场次选择模态框 */}
       {showHistoryModal && (
         <div className="modal-overlay" onClick={() => setShowHistoryModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -1441,7 +1503,7 @@ function DanmakuPage() {
         </div>
       )}
 
-      {/* User Detail Popup */}
+      {/* 用户详情弹窗 */}
       <UserDetailPopup 
         user={selectedUser} 
         position={popupPosition} 

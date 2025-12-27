@@ -7,16 +7,16 @@ import { loadHistory, saveMessage } from '../utils/historyStorage.js';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const MONITOR_FILE = path.join(DATA_DIR, 'monitored_rooms.json');
 
-// Ensure data directory exists
+// 确保数据目录存在
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
 class RoomManager {
   constructor() {
-    this.connections = new Map(); // roomId -> BilibiliLiveWS instance
+    this.connections = new Map(); // roomId -> BilibiliLiveWS 实例
     this.monitoredRooms = new Map(); // roomId -> { paused: boolean, addedAt: number }
-    this.wss = null; // WebSocket Server instance
+    this.wss = null; // WebSocket 服务器实例
     
     this.loadMonitoredRooms();
   }
@@ -30,13 +30,13 @@ class RoomManager {
       if (fs.existsSync(MONITOR_FILE)) {
         const data = JSON.parse(fs.readFileSync(MONITOR_FILE, 'utf-8'));
         
-        // Migration: Handle old array format
+        // 迁移：处理旧的数组格式
         if (Array.isArray(data)) {
           data.forEach(id => {
             this.monitoredRooms.set(String(id), { paused: false, addedAt: Date.now() });
           });
         } else {
-          // New object format
+          // 新的对象格式
           Object.entries(data).forEach(([id, config]) => {
             this.monitoredRooms.set(id, config);
           });
@@ -82,7 +82,7 @@ class RoomManager {
       this.monitoredRooms.delete(id);
       this.saveMonitoredRooms();
       
-      // Check if we should disconnect (no clients watching)
+      // 检查是否应该断开连接（没有客户端在观看）
       this.checkDisconnect(id);
       return true;
     }
@@ -96,7 +96,7 @@ class RoomManager {
       config.paused = true;
       this.monitoredRooms.set(id, config);
       this.saveMonitoredRooms();
-      this.checkDisconnect(id); // Will disconnect if no clients
+      this.checkDisconnect(id); // 如果没有客户端将断开连接
       return true;
     }
     return false;
@@ -146,7 +146,7 @@ class RoomManager {
       liveWS = new BilibiliLiveWS(id, cookies);
       this.connections.set(id, liveWS);
 
-      // Setup event handlers
+      // 设置事件处理程序
       this.setupEventHandlers(liveWS, id);
 
       try {
@@ -164,8 +164,8 @@ class RoomManager {
         }
       } catch (error) {
         console.error(`Failed to connect to room ${id}:`, error);
-        // Don't delete immediately, maybe retry later? 
-        // For now, let it stay in map so we don't spam create
+        // 不要立即删除，也许稍后重试？
+        // 暂时让它保留在 map 中，以免频繁创建
       }
     }
     return liveWS;
@@ -190,12 +190,12 @@ class RoomManager {
     liveWS.onClose = () => {
       broadcast({ type: 'system', message: '直播间连接已关闭' });
       
-      // If it closed unexpectedly and is monitored AND NOT PAUSED, we might want to reconnect
+      // 如果意外关闭且处于监控中且未暂停，我们可能需要重新连接
       const config = this.monitoredRooms.get(roomId);
       if (config && !config.paused) {
         console.log(`⚠️ Monitored room ${roomId} disconnected. Reconnecting in 5s...`);
         setTimeout(() => {
-          // Check again if still monitored and not paused
+          // 再次检查是否仍在监控且未暂停
           const currentConfig = this.monitoredRooms.get(roomId);
           if (currentConfig && !currentConfig.paused && this.connections.has(roomId)) {
              this.connections.get(roomId).connect();
@@ -223,12 +223,12 @@ class RoomManager {
     const id = String(roomId);
     const config = this.monitoredRooms.get(id);
     
-    // If monitored AND NOT PAUSED, never disconnect
+    // 如果处于监控中且未暂停，切勿断开连接
     if (config && !config.paused) {
       return;
     }
 
-    // Check if any clients are watching this room
+    // 检查是否有客户端正在观看此房间
     let hasClients = false;
     if (this.wss) {
       for (const client of this.wss.clients) {
@@ -249,7 +249,7 @@ class RoomManager {
     }
   }
 
-  // Initialize all monitored rooms on startup
+  // 启动时初始化所有监控的房间
   async init() {
     console.log('🚀 Initializing monitored rooms...');
     for (const [roomId, config] of this.monitoredRooms) {

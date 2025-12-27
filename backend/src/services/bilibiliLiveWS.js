@@ -884,31 +884,35 @@ export class BilibiliLiveWS {
         if (this.onGift) this.onGift(gift);
         break;
         
-      case 'GUARD_BUY': // 上舰
-        const guardUid = data.data.uid;
-        // 上舰消息比较重要，等待头像获取（避免显示默认头像）
-        const guardFace = await this.getUserFace(guardUid, true);
+      case 'USER_TOAST_MSG': // 续费/开通舰长 (比 GUARD_BUY 信息更全，价格更准)
+        const toastData = data.data;
+        const toastUid = toastData.uid;
+        const toastFace = await this.getUserFace(toastUid, true);
         
-        const guard = {
+        const toastGuard = {
           type: 'guard',
           user: {
-            uid: guardUid,
-            username: data.data.username,
-            face: guardFace
+            uid: toastUid,
+            username: toastData.username,
+            face: toastFace
           },
-          guardLevel: data.data.guard_level,
-          num: data.data.num,
-          price: data.data.price,
-          giftName: data.data.gift_name,
+          guardLevel: toastData.guard_level,
+          num: toastData.num,
+          price: toastData.price, // 金瓜子数 (1000 = 1元)
+          giftName: toastData.role_name, // 舰长/提督/总督
           timestamp: Math.floor(Date.now() / 1000)
         };
-        
-        // 保存到历史记录
+
         if (this.currentSessionId) {
-          saveMessage(this.roomId, this.currentSessionId, 'guard', guard);
+          saveMessage(this.roomId, this.currentSessionId, 'guard', toastGuard);
         }
 
-        if (this.onGuard) this.onGuard(guard);
+        if (this.onGuard) this.onGuard(toastGuard);
+        break;
+
+      case 'GUARD_BUY': // 上舰 (已废弃，使用 USER_TOAST_MSG)
+        // const guardUid = data.data.uid;
+        // ...
         break;
         
       case 'INTERACT_WORD': // 进房欢迎

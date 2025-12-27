@@ -51,7 +51,7 @@ router.post('/stop', (req, res) => {
     });
   }
   
-  // Only stop if not monitored
+  // 仅在未被监控时停止
   if (roomManager.monitoredRooms.has(roomId)) {
     return res.json({
       success: false,
@@ -95,7 +95,7 @@ export function createDanmakuWSS(server) {
     path: '/ws/danmaku'
   });
   
-  // Pass WSS to roomManager so it can broadcast
+  // 将WSS传递给roomManager以便广播
   roomManager.setWSS(wss);
   
   console.log('🌐 弹幕WebSocket服务器已启动: /ws/danmaku');

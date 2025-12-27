@@ -161,11 +161,10 @@ const ObsDanmakuPage = () => {
     return `${seconds}s`;
   };
 
-  // WebSocket连接
-  useEffect(() => {
+  // WebSocket连接逻辑
+  const connect = () => {
     // 防止重复连接
     if (wsRef.current) {
-      console.log('⚠️ WebSocket 已存在，跳过创建');
       return;
     }
     
@@ -250,12 +249,16 @@ const ObsDanmakuPage = () => {
       setConnected(false);
       wsRef.current = null;
       if (!isClosingRef.current) {
+        console.log('🔄 3秒后尝试重新连接...');
         setTimeout(() => {
-          console.log('🔄 准备重新连接...');
-          window.location.reload();
-        }, 5000);
+          connect();
+        }, 3000);
       }
     };
+  };
+
+  useEffect(() => {
+    connect();
 
     return () => {
       console.log('🧹 清理 WebSocket 连接');

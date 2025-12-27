@@ -78,7 +78,7 @@ function DashboardPage() {
         </div>
 
         <div className="dashboard-content">
-          {/* Quick Start Section */}
+          {/* 快速启动区域 */}
           <div className="quick-start-section">
             <h3>🚀 快速启动</h3>
             <div className="input-group">
@@ -126,6 +126,9 @@ function DashboardPage() {
             <ul className="feature-list">
               <li onClick={() => navigate('/obs-settings')} style={{cursor: 'pointer'}}>
                 ⚙️ OBS样式设置 →
+              </li>
+              <li onClick={() => navigate('/thankyou-settings')} style={{cursor: 'pointer'}}>
+                🎁 答谢姬设置 →
               </li>
             </ul>
           </div>

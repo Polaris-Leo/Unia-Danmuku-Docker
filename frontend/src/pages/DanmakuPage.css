@@ -509,7 +509,7 @@
 .danmaku-dashboard .gift-card-large {
   border-radius: 12px;
   padding: 12px;
-  margin-bottom: 6px;
+  margin-bottom: 4px; /* Reduced from 6px */
   position: relative;
   overflow: hidden;
   color: #fff;
@@ -673,8 +673,8 @@
 .danmaku-dashboard .gift-row-small {
   display: flex;
   align-items: center;
-  padding: 6px 0; /* Scaled 1.5x */
-  margin-bottom: 2px; /* Reduced from 6px */
+  padding: 4px 0; /* Reduced from 6px */
+  margin-bottom: 1px; /* Reduced from 2px */
   background: none;
   font-size: 21px; /* Scaled 1.5x */
   color: #333;
@@ -706,7 +706,7 @@
 .danmaku-dashboard .gift-name-small {
   color: #1890ff;
   font-weight: 600;
-  margin-right: 6px; /* Scaled 1.5x */
+  margin-right: 2px; /* Reduced from 6px */
 }
 
 .danmaku-dashboard .gift-price-small {
@@ -1106,7 +1106,7 @@
 }
 
 /* Toggle Switch */
-.toggle-switch {
+.dm-toggle-switch {
   position: relative;
   display: block;
   width: 44px !important;
@@ -1117,13 +1117,13 @@
   margin: 0;
 }
 
-.toggle-switch input {
+.dm-toggle-switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.slider {
+.dm-slider {
   position: absolute;
   cursor: pointer;
   top: 0;
@@ -1135,7 +1135,7 @@
   border-radius: 24px;
 }
 
-.slider:before {
+.dm-slider:before {
   position: absolute;
   content: "";
   height: 18px;
@@ -1147,15 +1147,15 @@
   border-radius: 50%;
 }
 
-input:checked + .slider {
+input:checked + .dm-slider {
   background-color: #2196F3;
 }
 
-input:focus + .slider {
+input:focus + .dm-slider {
   box-shadow: 0 0 1px #2196F3;
 }
 
-input:checked + .slider:before {
+input:checked + .dm-slider:before {
   transform: translateX(20px);
 }
 

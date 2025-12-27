@@ -1,0 +1,355 @@
+/* ThankYouSettingsPage.css */
+
+/* Base Layout */
+.v-app {
+  background-color: #f5f5f5;
+  height: 100vh; /* Fixed height to viewport */
+  width: 100vw;
+  overflow: hidden; /* Prevent global scrollbar */
+  font-family: "Roboto", sans-serif;
+  color: rgba(0, 0, 0, 0.87);
+  display: flex;
+  flex-direction: column;
+  position: fixed; /* Ensure it stays within window bounds */
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.settings-layout {
+  display: flex;
+  flex: 1;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* Left Pane: Preview */
+.preview-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #e0e0e0;
+  position: relative;
+  border-right: 1px solid rgba(0,0,0,0.12);
+  height: 100%;
+  overflow: hidden;
+}
+
+.preview-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  transition: background-color 0.3s;
+  background-image: 
+    linear-gradient(45deg, #ccc 25%, transparent 25%), 
+    linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+    linear-gradient(45deg, transparent 75%, #ccc 75%), 
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.preview-container.light-bg {
+  background-color: #f0f0f0;
+}
+
+.preview-container.dark-bg {
+  background-color: #121212;
+  background-image: none; /* Remove checkerboard for dark mode if preferred, or keep it */
+}
+
+/* The Card inside the preview */
+.thank-you-card-preview {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 20px;
+  width: 380px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 3px solid #ff99cc;
+  transform-origin: center;
+  /* Scale down if screen is small */
+  max-width: 90%;
+}
+
+.preview-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #ff99cc;
+  margin-bottom: 16px;
+  object-fit: cover;
+}
+
+.preview-message {
+  text-align: center;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+/* Preview Controls (Bottom of Left Pane) */
+.preview-controls {
+  height: 64px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 24px;
+  border-top: 1px solid rgba(0,0,0,0.12);
+  z-index: 10;
+}
+
+/* Right Pane: Settings */
+.settings-pane {
+  width: 400px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: -2px 0 4px rgba(0,0,0,0.05);
+}
+
+/* Settings Components */
+.v-expansion-panels {
+  display: flex;
+  flex-direction: column;
+}
+
+.v-expansion-panel {
+  border-bottom: 1px solid rgba(0,0,0,0.12);
+}
+
+.v-expansion-panel-title {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: #fff;
+  border: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(0,0,0,0.87);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.2s;
+}
+
+.v-expansion-panel-title:hover {
+  background-color: rgba(0,0,0,0.04);
+}
+
+.v-expansion-panel.active .v-expansion-panel-title {
+  color: #1867c0;
+}
+
+.v-expansion-panel-text {
+  padding: 0 24px 24px;
+  background-color: #fafafa;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 12px;
+  color: rgba(0,0,0,0.6);
+  margin-bottom: 8px;
+}
+
+.v-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(0,0,0,0.38);
+  border-radius: 4px;
+  font-size: 16px;
+  transition: all 0.3s;
+  box-sizing: border-box;
+}
+
+.v-input:focus {
+  border-color: #1867c0;
+  outline: none;
+  box-shadow: 0 0 0 1px #1867c0;
+}
+
+.v-input-color {
+  width: 100%;
+  height: 40px;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+textarea.v-input {
+  min-height: 80px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+/* Generation Section */
+.generation-section {
+  padding: 24px;
+  background: #f5f5f5;
+  border-top: 1px solid rgba(0,0,0,0.12);
+  text-align: center;
+}
+
+.generation-section h2 {
+  font-size: 20px;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: rgba(0,0,0,0.6);
+  margin-bottom: 16px;
+}
+
+/* Switch */
+.switch-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #1867c0;
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+.switch-label {
+  font-size: 14px;
+  color: rgba(0,0,0,0.87);
+  cursor: pointer;
+}
+
+/* Buttons */
+.v-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  height: 36px;
+  border-radius: 4px;
+  font-weight: 500;
+  letter-spacing: 0.0892857143em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 3px 1px -2px rgba(0,0,0,0.2), 0 2px 2px 0 rgba(0,0,0,0.14), 0 1px 5px 0 rgba(0,0,0,0.12);
+  transition: background-color 0.28s, box-shadow 0.28s;
+  font-size: 14px;
+}
+
+.v-btn.bg-red {
+  background-color: #f44336;
+  color: white;
+  margin-left: auto; /* Push to right in flex container */
+}
+
+.v-btn.bg-red:hover {
+  background-color: #d32f2f;
+}
+
+.v-btn.bg-primary {
+  background-color: #1867c0;
+  color: white;
+}
+
+.v-btn.bg-primary:hover {
+  background-color: #1555a0;
+}
+
+.v-btn.full-width {
+  width: 100%;
+}
+
+/* Divider */
+.v-divider {
+  display: block;
+  flex: 1 1 0px;
+  max-width: 100%;
+  height: 0;
+  max-height: 0;
+  border: solid;
+  border-width: thin 0 0 0;
+  transition: inherit;
+  border-color: rgba(0,0,0,0.12);
+  margin: 0;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .settings-layout {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+  
+  .preview-pane {
+    height: 50vh;
+    min-height: 400px;
+  }
+  
+  .settings-pane {
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+}

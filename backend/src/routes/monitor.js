@@ -3,7 +3,7 @@ import { roomManager } from '../services/roomManager.js';
 
 const router = express.Router();
 
-// Get all monitored rooms
+// 获取所有监控的房间
 router.get('/rooms', async (req, res) => {
   const roomIds = roomManager.getMonitoredRooms();
   
@@ -18,7 +18,7 @@ router.get('/rooms', async (req, res) => {
       addedAt: config ? config.addedAt : 0,
       uname: config?.uname || '加载中...',
       face: config?.face || '',
-      liveStatus: 0 // 0: offline, 1: live, 2: round
+      liveStatus: 0 // 0: 未开播, 1: 直播中, 2: 轮播
     };
 
     if (conn) {
@@ -30,7 +30,7 @@ router.get('/rooms', async (req, res) => {
                 info.uname = roomInfo.anchorName;
                 info.face = roomInfo.anchorFace;
                 
-                // Update cache
+                // 更新缓存
                 roomManager.updateRoomInfo(roomId, {
                     uname: roomInfo.anchorName,
                     face: roomInfo.anchorFace
@@ -52,19 +52,19 @@ router.get('/rooms', async (req, res) => {
   res.json({ success: true, rooms });
 });
 
-// Pause monitoring
+// 暂停监控
 router.post('/rooms/:roomId/pause', async (req, res) => {
   const success = await roomManager.pauseRoom(req.params.roomId);
   res.json({ success });
 });
 
-// Resume monitoring
+// 恢复监控
 router.post('/rooms/:roomId/resume', async (req, res) => {
   const success = await roomManager.resumeRoom(req.params.roomId);
   res.json({ success });
 });
 
-// Add a monitored room
+// 添加监控房间
 router.post('/rooms', async (req, res) => {
   const { roomId } = req.body;
   if (!roomId) {
@@ -75,7 +75,7 @@ router.post('/rooms', async (req, res) => {
   res.json({ success: true, message: `Room ${roomId} added to monitor list` });
 });
 
-// Remove a monitored room
+// 移除监控房间
 router.delete('/rooms/:roomId', async (req, res) => {
   const { roomId } = req.params;
   const removed = await roomManager.removeMonitoredRoom(roomId);

@@ -6,6 +6,8 @@ import DanmakuPage from './pages/DanmakuPage';
 import ObsDanmakuPage from './pages/ObsDanmakuPage';
 import ObsSettingsPage from './pages/ObsSettingsPage';
 import MonitorPage from './pages/MonitorPage';
+import ThankYouPage from './pages/ThankYouPage';
+import ThankYouSettingsPage from './pages/ThankYouSettingsPage';
 
 function App() {
   return (
@@ -17,6 +19,8 @@ function App() {
         <Route path="/obs" element={<ObsDanmakuPage />} />
         <Route path="/obs-settings" element={<ObsSettingsPage />} />
         <Route path="/monitor" element={<MonitorPage />} />
+        <Route path="/thankyou" element={<ThankYouPage />} />
+        <Route path="/thankyou-settings" element={<ThankYouSettingsPage />} />
       </Routes>
     </BrowserRouter>
   );
