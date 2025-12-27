@@ -749,8 +749,13 @@ export class BilibiliLiveWS {
           // 弹幕内容本身就是表情的文本（如"乐"、"摆"）
           // 我们需要将内容包装成 [xxx] 格式，这样前端才能匹配
           const emotKey = `[${content}]`;
+          let emotUrl = emoticon.url;
+          if (emotUrl && emotUrl.startsWith('http://')) {
+            emotUrl = emotUrl.replace('http://', 'https://');
+          }
+          
           emots[emotKey] = {
-            url: emoticon.url,
+            url: emotUrl,
             width: emoticon.width || 60,
             height: emoticon.height || 60,
             emoticon_id: emoticon.emoticon_id,
@@ -770,6 +775,12 @@ export class BilibiliLiveWS {
             
             // extra.emots 包含文本中的小表情
             if (extra.emots && Object.keys(extra.emots).length > 0) {
+              // 确保所有表情URL都是HTTPS
+              Object.keys(extra.emots).forEach(key => {
+                if (extra.emots[key].url && extra.emots[key].url.startsWith('http://')) {
+                  extra.emots[key].url = extra.emots[key].url.replace('http://', 'https://');
+                }
+              });
               // 合并到 emots 对象
               Object.assign(emots, extra.emots);
               console.log('🎨 文本小表情:', Object.keys(extra.emots).join(', '));
@@ -799,7 +810,10 @@ export class BilibiliLiveWS {
         // 从协议中直接获取用户信息（包括头像）
         const uid = info[2][0];
         const userInfo = info[0]?.[15]?.user?.base;
-        const face = userInfo?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg';  // 协议中的头像或默认头像
+        let face = userInfo?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg';  // 协议中的头像或默认头像
+        if (face && face.startsWith('http://')) {
+          face = face.replace('http://', 'https://');
+        }
         
         const danmaku = {
           type: 'danmaku',
