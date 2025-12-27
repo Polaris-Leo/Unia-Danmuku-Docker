@@ -41,6 +41,12 @@
     "staticIcon": "https://s1.hdslb.com/bfs/live/bb000147d5214593be0c5ca00f8f47ddc8a52251.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/af41e45d22833f31e53005bc12d3364909b96ae0.webp"
   },
+  "34358": {
+    "name": "粉丝团灯牌",
+    "icon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp"
+  },
   "34408": {
     "name": "药葫芦",
     "icon": "https://i0.hdslb.com/bfs/live/d46863388435d4d29e332f0f548403b4588fbd34.webp",

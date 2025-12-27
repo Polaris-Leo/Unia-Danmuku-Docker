@@ -444,7 +444,7 @@ const ObsDanmakuPage = () => {
                 }}
               >
                 <div className="sc-timer-avatar">
-                  <img src={sc.user.face} alt="" />
+                  <img src={sc.user.face} alt="" referrerPolicy="no-referrer" />
                 </div>
                 <div className="sc-timer-price">CN¥{sc.price}</div>
               </div>
@@ -527,6 +527,7 @@ const ObsDanmakuPage = () => {
                           : 'https://s1.hdslb.com/bfs/static/blive/live-pay-mono/relation/relation/assets/governor-DpDXKEdA.png'
                       }
                       alt={`guard-${guardLevel}`}
+                      referrerPolicy="no-referrer"
                       className="guard-icon"
                     />
                   )}

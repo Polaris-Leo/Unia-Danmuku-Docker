@@ -130,6 +130,7 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
   min-width: 0; /* Prevent flex item from overflowing */
+  position: relative; /* Ensure absolute positioned children are relative to this column */
 }
 
 .danmaku-dashboard .column-header {
@@ -823,8 +824,10 @@
 .new-msg-btn {
   position: absolute;
   bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  width: fit-content;
   background-color: #1890ff;
   color: white;
   padding: 6px 16px;
@@ -837,18 +840,18 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background-color 0.3s, transform 0.3s, box-shadow 0.3s;
   animation: popIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 }
 
 .new-msg-btn:hover {
   background-color: #40a9ff;
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(24, 144, 255, 0.5);
 }
 
 .new-msg-btn:active {
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 
 .arrow-down {
@@ -858,11 +861,11 @@
 @keyframes popIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) scale(0.8) translateY(10px);
+    transform: scale(0.8) translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) scale(1) translateY(0);
+    transform: scale(1) translateY(0);
   }
 }
 

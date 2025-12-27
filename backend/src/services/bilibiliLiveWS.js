@@ -95,7 +95,8 @@ export class BilibiliLiveWS {
           // 更新最后活跃时间
           this.lastSessionEndTime = now;
         } else {
-          this.currentSessionId = null;
+          // 下播状态下，不重置 currentSessionId，以便记录下播后的弹幕
+          // this.currentSessionId = null;
         }
 
         return {
@@ -697,17 +698,42 @@ export class BilibiliLiveWS {
     switch (cmd) {
       case 'PREPARING': // 直播准备中（下播）
         console.log('💤 直播准备中 (PREPARING)');
-        this.currentSessionId = null;
-        // lastSessionEndTime 已经在心跳或消息处理中更新了，这里不需要重置
-        if (this.onLiveStatus) this.onLiveStatus({ liveStatus: 0 });
+        
+        // 记录直播结束分界线
+        if (this.currentSessionId) {
+          const divider = {
+            type: 'divider',
+            content: '直播已结束',
+            timestamp: Math.floor(Date.now() / 1000)
+          };
+          saveMessage(this.roomId, this.currentSessionId, 'danmaku', divider);
+          // 不重置 currentSessionId，以便记录下播后的弹幕
+        }
+        
+        if (this.onLiveStatus) this.onLiveStatus({ liveStatus: 0, liveStartTime: 0 });
         break;
 
       case 'LIVE': // 直播开始
         console.log('▶️ 直播开始 (LIVE)');
-        // 获取新的直播状态和时间，getLiveStatus 内部会处理会话延续逻辑
-        this.getLiveStatus().then(status => {
-             if (this.onLiveStatus) this.onLiveStatus(status);
-        });
+        // 延迟获取状态，确保API更新
+        setTimeout(async () => {
+          const oldSessionId = this.currentSessionId;
+          const status = await this.getLiveStatus();
+          
+          // 如果产生了新的会话ID，说明是新的一场直播
+          if (this.currentSessionId && this.currentSessionId !== oldSessionId) {
+             const divider = {
+                type: 'divider',
+                content: '直播已开始',
+                timestamp: Math.floor(Date.now() / 1000)
+             };
+             saveMessage(this.roomId, this.currentSessionId, 'danmaku', divider);
+          }
+          
+          if (status && this.onLiveStatus) {
+            this.onLiveStatus(status);
+          }
+        }, 2000);
         break;
 
       case 'DANMU_MSG': // 弹幕
