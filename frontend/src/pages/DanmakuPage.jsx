@@ -6,6 +6,8 @@ import './DanmakuPage.css';
 
 const UserDetailPopup = ({ user, position, onClose }) => {
   const popupRef = useRef(null);
+  const [nameCopied, setNameCopied] = useState(false);
+  const [uidCopied, setUidCopied] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -18,6 +20,24 @@ const UserDetailPopup = ({ user, position, onClose }) => {
   }, [onClose]);
 
   if (!user) return null;
+
+  const handleCopyName = (e) => {
+    e.stopPropagation();
+    if (user.username) {
+      navigator.clipboard.writeText(user.username);
+      setNameCopied(true);
+      setTimeout(() => setNameCopied(false), 2000);
+    }
+  };
+
+  const handleCopyUid = (e) => {
+    e.stopPropagation();
+    if (user.uid) {
+      navigator.clipboard.writeText(user.uid.toString());
+      setUidCopied(true);
+      setTimeout(() => setUidCopied(false), 2000);
+    }
+  };
 
   // 计算位置以保持在屏幕内
   const style = {
@@ -47,14 +67,30 @@ const UserDetailPopup = ({ user, position, onClose }) => {
           </div>
           <div className="user-popup-info">
             <div className="user-popup-name-row">
-              <span className="user-popup-name" title={user.username}>{user.username}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{cursor: 'pointer', color: '#a1a1aa'}}>
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
+              <a 
+                href={`https://space.bilibili.com/${user.uid}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="user-popup-name" 
+                title={`跳转至 ${user.username} 的空间`}
+                style={{ textDecoration: 'none' }}
+              >
+                {user.username}
+              </a>
+              <div onClick={handleCopyName} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: '4px' }} title="点击复制用户名">
+                {nameCopied ? (
+                  <span style={{ fontSize: '10px', color: '#52c41a' }}>已复制</span>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#a1a1aa' }}>
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                )}
+              </div>
             </div>
-            <div className="user-popup-uid" onClick={() => navigator.clipboard.writeText(user.uid)} title="点击复制UID">
+            <div className="user-popup-uid" onClick={handleCopyUid} title="点击复制UID">
               UID:{user.uid}
+              {uidCopied && <span style={{ marginLeft: '4px', color: '#52c41a', fontSize: '10px' }}>已复制</span>}
             </div>
             <div className="user-popup-time">
                {user.msgTime ? new Date(user.msgTime).toLocaleString() : '未知时间'}
@@ -917,6 +953,37 @@ function DanmakuPage() {
     return parts.length > 0 ? parts : content;
   };
 
+  // Helper: Render SC Message with BV links
+  // 辅助函数：渲染带有 BV 号链接的 SC 消息
+  const renderSCMessage = (content) => {
+    if (!content) return '';
+    
+    // Regex for BV ID (BV + 10 alphanumeric characters)
+    // BV 号正则表达式（BV + 10 个字母数字字符）
+    const bvRegex = /(BV[a-zA-Z0-9]{10})/g;
+    
+    const parts = content.split(bvRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(bvRegex)) {
+        return (
+          <a 
+            key={index}
+            href={`https://www.bilibili.com/video/${part}/`}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'inherit', textDecoration: 'underline', fontWeight: 'bold' }}
+            onClick={(e) => e.stopPropagation()}
+            title="点击跳转至视频"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   // Helper: Get SC Color
   // 辅助函数：获取 SC 颜色
   const getSCColor = (price) => {
@@ -1322,7 +1389,7 @@ function DanmakuPage() {
                     <div className="sc-time">{timeStr}</div>
                   </div>
                   <div className="sc-message">
-                    {msg.message}
+                    {renderSCMessage(msg.message)}
                   </div>
                 </div>
               );
