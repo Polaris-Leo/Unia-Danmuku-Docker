@@ -4,6 +4,12 @@ import NumberFlow from '@number-flow/react';
 import { getAuthStatus, logout, getHistorySessions, getHistoryData } from '../services/api';
 import './DanmakuPage.css';
 
+// Global ID generator to ensure uniqueness across renders
+let globalIdCounter = 0;
+const generateId = (prefix = 'msg') => {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${globalIdCounter++}`;
+};
+
 const UserDetailPopup = ({ user, position, onClose }) => {
   const popupRef = useRef(null);
   const [nameCopied, setNameCopied] = useState(false);
@@ -63,6 +69,7 @@ const UserDetailPopup = ({ user, position, onClose }) => {
               alt="avatar" 
               className="user-popup-avatar" 
               referrerPolicy="no-referrer"
+              onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
             />
           </div>
           <div className="user-popup-info">
@@ -121,6 +128,44 @@ const UserDetailPopup = ({ user, position, onClose }) => {
           </a>
         </div>
       </div>
+    </div>
+  );
+};
+
+const TrendNumber = ({ value, label }) => {
+  const [color, setColor] = useState('#333');
+  const prevValue = useRef(value);
+
+  useEffect(() => {
+    if (value > prevValue.current) {
+      setColor('#52c41a'); // Green for increase
+    } else if (value < prevValue.current) {
+      setColor('#ff4d4f'); // Red for decrease
+    }
+    
+    const timer = setTimeout(() => {
+      setColor('#333');
+    }, 1000);
+
+    prevValue.current = value;
+    return () => clearTimeout(timer);
+  }, [value]);
+
+  return (
+    <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>{label}</span>
+      <NumberFlow 
+        value={value} 
+        format={{ useGrouping: true }}
+        style={{ 
+          fontSize: '14px', 
+          fontWeight: 'bold', 
+          color: color, 
+          fontVariantNumeric: 'tabular-nums',
+          '--number-flow-char-height': '14px',
+          transition: 'color 0.3s ease-out'
+        }}
+      />
     </div>
   );
 };
@@ -201,6 +246,13 @@ function DanmakuPage() {
   const danmakuEndRef = useRef(null);
   const scEndRef = useRef(null);
   const giftEndRef = useRef(null);
+
+  // Ref to track auto-scroll state in closures (like handleMessage)
+  // Ref 用于在闭包（如 handleMessage）中跟踪自动滚动状态
+  const isGiftAutoScrollRef = useRef(isGiftAutoScroll);
+  useEffect(() => {
+    isGiftAutoScrollRef.current = isGiftAutoScroll;
+  }, [isGiftAutoScroll]);
 
   useEffect(() => {
     checkAuth();
@@ -482,10 +534,10 @@ function DanmakuPage() {
         setLoadedHistorySessions(prev => new Set(prev).add(targetSessionId));
         
         // 处理数据
-        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
-        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
-        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
-        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || `hist-${Date.now()}-${Math.random()}` }));
+        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
+        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
+        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
+        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
         
         // 创建分界线
         // 分界线时间戳设为该场次最后一条消息的时间，或者下一场开始前
@@ -500,7 +552,7 @@ function DanmakuPage() {
             type: 'divider',
             content: '直播已结束',
             timestamp: maxTime + 1,
-            id: `divider-${targetSessionId}`
+            id: `divider-${targetSessionId}-${generateId()}`
         };
         
         // 合并到列表头部
@@ -666,10 +718,10 @@ function DanmakuPage() {
         const { danmaku, superchat, gift, guard } = response.data;
         
         // 处理并设置数据
-        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
-        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
-        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
-        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
+        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
+        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
+        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
 
         setDanmakuList(historyDanmaku); // 加载所有历史记录，而不仅仅是最后 200 条
         setScList(historySc);
@@ -706,7 +758,8 @@ function DanmakuPage() {
   };
 
   const handleMessage = (data) => {
-    const msg = { ...data, id: Date.now() + Math.random() };
+    // Use generateId to ensure unique string ID
+    const msg = { ...data, id: generateId('msg') };
     
     // 辅助函数：检查重复
     const isDuplicate = (list, newItem, type) => {
@@ -737,58 +790,74 @@ function DanmakuPage() {
     switch (data.type) {
       case 'danmaku':
         setDanmakuList(prev => {
+          // Prevent ID collision
+          if (prev.some(item => item.id === msg.id)) return prev;
           if (isDuplicate(prev, msg, 'danmaku')) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'superchat':
         setScList(prev => {
+          if (prev.some(item => item.id === msg.id)) return prev;
           if (isDuplicate(prev, msg, 'superchat')) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         setDanmakuList(prev => {
+          if (prev.some(item => item.id === msg.id)) return prev;
           if (isDuplicate(prev, msg, 'superchat')) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'gift':
         setGiftList(prev => {
-          // 1. Check for duplicates first (including against lastFingerprint)
-          // 1. 首先检查重复项（包括针对 lastFingerprint）
+          // Helper to normalize timestamp
+          // 辅助函数：归一化时间戳
+          const toMs = (ts) => {
+            const num = Number(ts) || 0;
+            return num < 10000000000 ? num * 1000 : num;
+          };
+
+          // 1. Check for duplicates first
+          // 1. 首先检查重复项
           if (isDuplicate(prev, msg, 'gift')) return prev;
 
-          // 2. Check for stacking (Combo)
-          // 2. 检查堆叠（连击）
-          const lastItem = prev[prev.length - 1];
-          // Only stack if it's a gift (not divider/guard) and same user/giftId
-          // 仅当是礼物（非分界线/舰长）且是同一用户/同一礼物ID时才堆叠
-          if (lastItem && lastItem.type === 'gift' && 
-              lastItem.user?.uid === msg.user?.uid && 
-              lastItem.giftId === msg.giftId) {
+          const newList = [...prev];
+          const msgMs = toMs(msg.timestamp);
+          
+          // 2. Search backwards for stackable item
+          // 2. 向后搜索可堆叠的项目
+          let foundIndex = -1;
+          // Search entire list to ensure we find the stack even in high traffic
+          // 搜索整个列表以确保即使在高流量下也能找到堆叠
+          // Since we move updated items to the bottom, the list is roughly sorted by update time.
+          // 由于我们将更新的项目移动到底部，因此列表大致按更新时间排序。
+          
+          for (let i = newList.length - 1; i >= 0; i--) {
+            const item = newList[i];
+            if (item.type === 'divider') break; // Don't stack across sessions // 不要跨会话堆叠
             
-            // Check time window (30 seconds)
-            // 检查时间窗口（30秒）
-            // msg.timestamp is usually unix timestamp (seconds) or ms. 
-            // Assuming consistent units.
-            // msg.timestamp 通常是 Unix 时间戳（秒）或毫秒。假设单位一致。
-            const timeDiff = Math.abs((msg.timestamp || 0) - (lastItem.timestamp || 0));
+            // Optimization: If we encounter items much older than 60s, we can potentially stop?
+            // 优化：如果我们遇到比 60 秒早得多的项目，我们可以停止吗？
+            // But due to network delay or out-of-order processing, let's be safe and search all.
+            // 但是由于网络延迟或乱序处理，为了安全起见，我们搜索所有内容。
+            // 5000 items loop is negligible in JS.
+            // 5000 个项目的循环在 JS 中可以忽略不计。
             
-            // Threshold: 30 seconds. 
-            // 阈值：30秒。
-            // If timestamp is large (> 10000000000), it's ms. If < 10000000000, it's seconds.
-            // 如果时间戳很大 (> 10000000000)，则是毫秒。如果 < 10000000000，则是秒。
-            // Bilibili usually uses seconds. 30s.
-            // Bilibili 通常使用秒。30秒。
-            // If it happens to be ms, 30 is 0.03s, which is too strict.
-            // 如果恰好是毫秒，30 就是 0.03秒，太严格了。
-            // Let's assume seconds. If diff is huge, it won't stack.
-            // 让我们假设是秒。如果差异巨大，则不会堆叠。
-            // To be safe, we can check magnitude.
-            // 为了安全起见，我们可以检查数量级。
-            const isMs = (msg.timestamp || 0) > 10000000000;
-            const threshold = isMs ? 30000 : 30;
+            if (item.type === 'gift' &&
+                String(item.user?.uid) === String(msg.user?.uid) &&
+                String(item.giftId) === String(msg.giftId)) {
+                foundIndex = i;
+                break;
+            }
+          }
 
-            if (timeDiff <= threshold) {
+          if (foundIndex !== -1) {
+            const lastItem = newList[foundIndex];
+            const timeDiff = Math.abs(msgMs - toMs(lastItem.timestamp));
+            
+            // Threshold: 60 seconds
+            // 阈值：60秒
+            if (timeDiff <= 60000) {
               // Stack it!
               // 堆叠它！
               const currentNum = msg.num || 1;
@@ -799,21 +868,29 @@ function DanmakuPage() {
 
               const updatedItem = {
                 ...lastItem,
-                num: currentNum, // The latest batch count // 最新批次的数量
-                totalNum: newTotal, // Accumulated count // 累计数量
-                timestamp: msg.timestamp, // Update time to extend window // 更新时间以延长窗口
-                lastFingerprint: fingerprint, // Store for duplicate check // 存储用于重复检查
-                // Keep original ID to maintain React key stability or update it?
-                // 保持原始 ID 以维持 React key 稳定性还是更新它？
-                // If we update ID, it might flash. Let's keep ID but force update.
-                // 如果我们更新 ID，可能会闪烁。让我们保持 ID 但强制更新。
-                // Actually, we need to trigger re-render.
-                // 实际上，我们需要触发重新渲染。
-                // Creating a new object reference is enough for React state.
-                // 创建新的对象引用对于 React 状态来说就足够了。
+                num: currentNum, 
+                totalNum: newTotal, 
+                timestamp: msg.timestamp, // Update time (Refresh CD) // 更新时间（刷新 CD）
+                lastFingerprint: fingerprint
               };
               
-              return [...prev.slice(0, -1), updatedItem];
+              // If auto-scroll is enabled, move to bottom to show latest activity.
+              // If user is scrolling back (auto-scroll disabled), update in place to avoid item jumping out of view.
+              // 如果启用了自动滚动，则移动到底部以显示最新活动。
+              // 如果用户正在回滚（禁用自动滚动），则原地更新以避免项目跳出视图。
+              
+              if (isGiftAutoScrollRef.current) {
+                  // Remove old item and push updated one to bottom
+                  // 移除旧项目并将更新后的项目推到底部
+                  newList.splice(foundIndex, 1);
+                  newList.push(updatedItem);
+              } else {
+                  // Update in place
+                  // 原地更新
+                  newList[foundIndex] = updatedItem;
+              }
+              
+              return newList.slice(-maxCount);
             }
           }
 
@@ -824,22 +901,25 @@ function DanmakuPage() {
             totalNum: msg.num || 1,
             lastFingerprint: `${msg.timestamp}-${msg.user?.uid}-${msg.giftId}-${msg.num}`
           };
-          return [...prev, newItem].slice(-maxCount);
+          return [...newList, newItem].slice(-maxCount);
         });
         
         // Also add to Danmaku list (optional: do we stack there too? Probably not requested, keep simple)
         // 也添加到弹幕列表（可选：我们在那里也堆叠吗？可能没有要求，保持简单）
         setDanmakuList(prev => {
+          if (prev.some(item => item.id === msg.id)) return prev;
           if (isDuplicate(prev, msg, 'gift')) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         break;
       case 'guard':
         setGiftList(prev => {
+          if (prev.some(item => item.id === msg.id)) return prev;
           if (isDuplicate(prev, msg, data.type)) return prev;
           return [...prev, msg].slice(-maxCount);
         });
         setDanmakuList(prev => {
+          if (prev.some(item => item.id === msg.id)) return prev;
           if (isDuplicate(prev, msg, data.type)) return prev;
           return [...prev, msg].slice(-maxCount);
         });
@@ -867,23 +947,98 @@ function DanmakuPage() {
         setWatchedCount(data.data.watchedCount);
         break;
       case 'history':
-        const historyDanmaku = (data.data.danmaku || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
-        const historySc = (data.data.superchat || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
-        const historyGift = (data.data.gift || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
-        const historyGuard = (data.data.guard || []).map(item => ({ ...item, id: item.id || Date.now() + Math.random() }));
+        const historyDanmaku = (data.data.danmaku || []).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
+        const historySc = (data.data.superchat || []).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
+        const historyGift = (data.data.gift || []).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
+        const historyGuard = (data.data.guard || []).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
 
         setDanmakuList(historyDanmaku.slice(-200));
         setScList(historySc.slice(-100));
         
+        // Helper to normalize timestamp to milliseconds
+        // 辅助函数：将时间戳归一化为毫秒
+        const toMs = (ts) => {
+          const num = Number(ts) || 0;
+          return num < 10000000000 ? num * 1000 : num;
+        };
+
         // Merge gifts and guards, then sort by timestamp
         // 合并礼物和舰长，然后按时间戳排序
         const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => {
-          const timeA = a.timestamp || 0;
-          const timeB = b.timestamp || 0;
+          const timeA = toMs(a.timestamp);
+          const timeB = toMs(b.timestamp);
           return timeA - timeB;
         });
+
+        // Process stacking for history gifts
+        // 处理历史礼物的堆叠
+        const processedGifts = [];
+        combinedGifts.forEach(msg => {
+          if (msg.type === 'divider') {
+             processedGifts.push(msg);
+             return;
+          }
+
+          // Ensure numeric types for comparison if possible, or string for IDs
+          // 尽可能确保用于比较的数字类型，或用于 ID 的字符串
+          const currentMsg = { 
+            ...msg, 
+            totalNum: msg.num || 1,
+            // Keep original timestamp but ensure it's a number
+            // 保持原始时间戳，但确保它是数字
+            timestamp: Number(msg.timestamp)
+          };
+
+          // Search backwards for stackable item
+          // 向后搜索可堆叠的项目
+          let foundIndex = -1;
+          for (let i = processedGifts.length - 1; i >= 0; i--) {
+            const item = processedGifts[i];
+            if (item.type === 'divider') break; // Don't stack across sessions // 不要跨会话堆叠
+            
+            if (item.type === 'gift' &&
+                String(item.user?.uid) === String(currentMsg.user?.uid) &&
+                String(item.giftId) === String(currentMsg.giftId)) {
+                foundIndex = i;
+                break;
+            }
+          }
+
+          if (foundIndex !== -1) {
+            const lastItem = processedGifts[foundIndex];
+            const t1 = toMs(lastItem.timestamp);
+            const t2 = toMs(currentMsg.timestamp);
+            const timeDiff = Math.abs(t2 - t1);
+            
+            // Threshold: 60 seconds (60000 ms)
+            // 阈值：60秒（60000毫秒）
+            if (timeDiff <= 60000) {
+              // Stack
+              // 堆叠
+              lastItem.num = currentMsg.num; // Update to latest batch size // 更新为最新批次大小
+              lastItem.totalNum += currentMsg.num; // Accumulate total // 累计总数
+              lastItem.timestamp = currentMsg.timestamp; // Update time (Refresh CD) // 更新时间（刷新 CD）
+              lastItem.lastFingerprint = currentMsg.lastFingerprint; 
+              
+              // Move to bottom to reflect latest update?
+              // 移动到底部以反映最新更新？
+              // For history, we usually want to keep time order. 
+              // 对于历史记录，我们通常希望保持时间顺序。
+              // But if we update timestamp, it effectively becomes a "new" message at that time.
+              // 但是如果我们更新时间戳，它实际上在那个时间变成了一条“新”消息。
+              // So moving it to the end of the current processed list (which is sorted by time) makes sense.
+              // 所以将其移动到当前处理列表（按时间排序）的末尾是有意义的。
+              processedGifts.splice(foundIndex, 1);
+              processedGifts.push(lastItem);
+              
+              return; // Skip pushing currentMsg // 跳过推送 currentMsg
+            }
+          }
+          
+          processedGifts.push(currentMsg);
+        });
         
-        setGiftList(combinedGifts.slice(-100));
+        setGiftList(processedGifts.slice(-100));
         break;
       default:
         break;
@@ -1098,57 +1253,19 @@ function DanmakuPage() {
                   alt={anchorName}
                   style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid #fff', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                   referrerPolicy="no-referrer"
+                  onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                 />
                 {/* <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{anchorName}</span> */}
               </div>
 
               {/* 舰长数量 */}
-              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>大航海</span>
-                <NumberFlow 
-                  value={guardCount} 
-                  format={{ useGrouping: true }}
-                  style={{ 
-                    fontSize: '14px', 
-                    fontWeight: 'bold', 
-                    color: '#333', 
-                    fontVariantNumeric: 'tabular-nums',
-                    '--number-flow-char-height': '14px',
-                  }}
-                />
-              </div>
+              <TrendNumber value={guardCount} label="大航海" />
 
               {/* 粉丝团 / 人气 */}
-              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>粉丝团</span>
-                <NumberFlow 
-                  value={fansClubCount > 0 ? fansClubCount : followerCount} 
-                  format={{ useGrouping: true }}
-                  style={{ 
-                    fontSize: '14px', 
-                    fontWeight: 'bold', 
-                    color: '#333', 
-                    fontVariantNumeric: 'tabular-nums',
-                    '--number-flow-char-height': '14px',
-                  }}
-                />
-              </div>
+              <TrendNumber value={fansClubCount > 0 ? fansClubCount : followerCount} label="粉丝团" />
 
               {/* 高能榜人数 */}
-              <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ fontSize: '11px', color: '#999', lineHeight: 1 }}>高能榜</span>
-                <NumberFlow 
-                  value={rankCount} 
-                  format={{ useGrouping: true }}
-                  style={{ 
-                    fontSize: '14px', 
-                    fontWeight: 'bold', 
-                    color: '#333', 
-                    fontVariantNumeric: 'tabular-nums',
-                    '--number-flow-char-height': '14px',
-                  }}
-                />
-              </div>
+              <TrendNumber value={rankCount} label="高能榜" />
 
               {/* 直播时长 */}
               <div className="stat-item" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1258,6 +1375,7 @@ function DanmakuPage() {
                       src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                       alt={msg.user?.username}
                       referrerPolicy="no-referrer"
+                      onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                     />
                   </div>
                   
@@ -1379,6 +1497,7 @@ function DanmakuPage() {
                           src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                           alt=""
                           referrerPolicy="no-referrer"
+                          onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                         />
                       </div>
                       <div className="sc-header-content">
@@ -1509,6 +1628,7 @@ function DanmakuPage() {
                           src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                           alt=""
                           referrerPolicy="no-referrer"
+                          onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                         />
                       </div>
                       <div className="guard-card-content">
@@ -1537,6 +1657,7 @@ function DanmakuPage() {
                           src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                           alt=""
                           referrerPolicy="no-referrer"
+                          onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                         />
                       </div>
                       <div className="gift-highlight-content">
@@ -1571,6 +1692,7 @@ function DanmakuPage() {
                       src={msg.user?.face || 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                       alt=""
                       referrerPolicy="no-referrer"
+                      onError={(e) => e.target.src = 'https://i0.hdslb.com/bfs/face/member/noface.jpg'}
                     />
                     <span className="gift-username-small" onClick={(e) => handleUserClick(e, msg.user, msg.timestamp * 1000)}>{msg.user?.username}</span>
                     {smallIconSrc && (

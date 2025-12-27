@@ -545,8 +545,170 @@
     "height": 20,
     "emoticon_unique": "upower_[胡桃Usa堕令时_灵魂出窍]"
   },
-  "[手机]": {
+  "[[七濑Unia_O掰]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/fdfd22874cedb3ab012355bd823b66f4f1b606d3.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[七濑Unia_O掰]"
+  },
+  "[Mua]": {
+    "url": "https://i0.hdslb.com/bfs/live/6d684142cae16bf35ee8e196ee8b2488d9dfa9b8.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_21514463_975"
+  },
+  "[[UPOWER_353361863_芜湖]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/7c9b27f8c07d42eb4e678d7a2e1d2ff55b83ee10.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[UPOWER_353361863_芜湖]"
+  },
+  "[[早稻叽收藏集表情包_生日快乐]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/abad11c47e17fcdb16638afefd34a09bd979173b.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[早稻叽收藏集表情包_生日快乐]"
+  },
+  "[[七濑Unia_给点给点]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/a7b197a36c93a85c19d3550dc39dea239e7950ad.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[七濑Unia_给点给点]"
+  },
+  "[啊]": {
+    "url": "https://i0.hdslb.com/bfs/live/cbf2746062242e77bdcb9eb08edbf9b151fe0c2e.png",
+    "width": 200,
+    "height": 60,
+    "emoticon_unique": "official_331"
+  },
+  "[[UPOWER_353361863_害羞]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/a5319cd119945a7392e7a45297b090b321fdeeca.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[UPOWER_353361863_害羞]"
+  },
+  "[理直气壮]": {
+    "url": "https://i0.hdslb.com/bfs/live/7cdc2de9835d66ffa4b2109023b7c984f2b6d2e8.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_21514463_28785"
+  },
+  "[OH]": {
     "count": 1,
+    "descript": "[OH]",
+    "emoji": "[OH]",
+    "emoticon_id": 259,
+    "emoticon_unique": "emoji_259",
+    "height": 20,
+    "url": "https://i0.hdslb.com/bfs/live/0d5123cddf389302df6f605087189fd10919dc3c.png",
+    "width": 20
+  },
+  "[看戏]": {
+    "url": "https://i0.hdslb.com/bfs/garb/39d2125d7adcf03ae3e87feb8b3e6d4a0fd35bee.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_21514463_970"
+  },
+  "[[七濑Unia_海王]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/134abb7346da29249526306c0d7a9425eb219df8.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[七濑Unia_海王]"
+  },
+  "[[UPOWER_353361863_嘶哈嘶哈]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/9ee2bb2c827267de13554271662bab7558c083ab.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[UPOWER_353361863_嘶哈嘶哈]"
+  },
+  "[太赞了]": {
+    "url": "https://i0.hdslb.com/bfs/live/394ce47108229ff5bf30bd0498145a28fabd9719.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_21514463_597"
+  },
+  "[[鹅崽日记表情包·静态_舔你~]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/49b1f9a082f8ee7154604d822baab6c9f74667b3.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[鹅崽日记表情包·静态_舔你~]"
+  },
+  "[冲鸭]": {
+    "url": "https://i0.hdslb.com/bfs/live/dea7fbbc1c3d3c80f4c7b27263e13460f21874e4.png",
+    "width": 200,
+    "height": 60,
+    "emoticon_unique": "official_332"
+  },
+  "[爱]": {
+    "count": 2,
+    "descript": "[爱]",
+    "emoji": "[爱]",
+    "emoticon_id": 212,
+    "emoticon_unique": "emoji_212",
+    "height": 20,
+    "url": "https://i0.hdslb.com/bfs/live/1daaa5d284dafaa16c51409447da851ff1ec557f.png",
+    "width": 20
+  },
+  "[[千恋万花表情包_丛雨Ciallo]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/item/eea9a26bbaf90be4736a2208aea26299e2ab73b4.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[千恋万花表情包_丛雨Ciallo]"
+  },
+  "[大哭]": {
+    "count": 6,
+    "descript": "[大哭]",
+    "emoji": "[大哭]",
+    "emoticon_id": 263,
+    "emoticon_unique": "emoji_263",
+    "height": 20,
+    "url": "https://i0.hdslb.com/bfs/live/816402551e6ce30d08b37a917f76dea8851fe529.png",
+    "width": 20
+  },
+  "[[UPOWER_353361863_给点给点]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/d66c68ced9cf925a81505e9b2b0f59f6393a567e.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[UPOWER_353361863_给点给点]"
+  },
+  "[[胡桃Usa_开心]]": {
+    "url": "https://i0.hdslb.com/bfs/emote/70c370a2d9b7bc9f1cf12cc9a6b717c7e51249fb.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[胡桃Usa_开心]"
+  },
+  "[四处看]": {
+    "url": "https://i0.hdslb.com/bfs/live/d1abaa2d374140d68ff67494be448a26acecc34b.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_4788550_41158"
+  },
+  "[急了]": {
+    "url": "https://i0.hdslb.com/bfs/live/1fe5ecaf369162546327eb19c4e384de7768b10d.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_4788550_41160"
+  },
+  "[[胡桃Usa收藏集_开车]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/67f0266b9ec565517f097b7c80f8d1ffe91c6d04.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[胡桃Usa收藏集_开车]"
+  },
+  "[HEPPY]": {
+    "url": "https://i0.hdslb.com/bfs/live/531de6f71e0861c75716b857b6be3f2bde7a0d17.png",
+    "width": 162,
+    "height": 162,
+    "emoticon_unique": "room_4788550_41155"
+  },
+  "[[千恋万花表情包_可爱]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/72841c024fe60f694527caa9c6854a4e9f01e810.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[千恋万花表情包_可爱]"
+  },
+  "[手机]": {
+    "count": 2,
     "descript": "[手机]",
     "emoji": "[手机]",
     "emoticon_id": 213,
@@ -555,10 +717,16 @@
     "url": "https://i0.hdslb.com/bfs/live/b159f90431148a973824f596288e7ad6a8db014b.png",
     "width": 20
   },
-  "[[天才鸽鸽表情包_过来挨骂]]": {
-    "url": "https://i0.hdslb.com/bfs/garb/7d61c90393d4c628a48250d98b4a45857f01431c.png",
+  "[[箱庭少女之梦表情包_给心心]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/a827dc274991fd7a4ae03adc2143f0913e930bb1.png",
     "width": 20,
     "height": 20,
-    "emoticon_unique": "upower_[天才鸽鸽表情包_过来挨骂]"
+    "emoticon_unique": "upower_[箱庭少女之梦表情包_给心心]"
+  },
+  "[[Mygo表情包_让我看看]]": {
+    "url": "https://i0.hdslb.com/bfs/garb/item/ea42e2cdfb5a7d5aa67c8d02564213ba020b14a0.png",
+    "width": 20,
+    "height": 20,
+    "emoticon_unique": "upower_[Mygo表情包_让我看看]"
   }
 }

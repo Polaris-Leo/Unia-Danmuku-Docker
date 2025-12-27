@@ -301,7 +301,12 @@ export class BilibiliLiveWS {
   async getUserFace(uid, shouldWait = false) {
     // 检查缓存
     if (this.userFaceCache.has(uid)) {
-      return this.userFaceCache.get(uid);
+      let faceUrl = this.userFaceCache.get(uid);
+      // Ensure HTTPS from cache
+      if (faceUrl && faceUrl.startsWith('http://')) {
+        faceUrl = faceUrl.replace('http://', 'https://');
+      }
+      return faceUrl;
     }
 
     const defaultFace = 'https://i0.hdslb.com/bfs/face/member/noface.jpg';
@@ -333,41 +338,96 @@ export class BilibiliLiveWS {
   async _fetchUserFaceFromApi(uid) {
     console.log(`🔍 获取头像: uid=${uid}`);
     
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Referer': 'https://www.bilibili.com'
+    };
+    
+    if (this.cookies) {
+      headers['Cookie'] = getCookieString(this.cookies);
+    }
+
+    let candidateFace = null;
+
+    // Helper to check if face is valid (not default noface)
+    const isRealFace = (url) => {
+      return url && !url.includes('noface') && !url.includes('akari.jpg');
+    };
+
+    // 1. 优先尝试直播 API (live_user/v1/Master/info)
     try {
-      const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': 'https://www.bilibili.com'
-      };
-      
-      // 添加Cookie以获取权限
-      if (this.cookies) {
-        const cookieStr = getCookieString(this.cookies);
-        headers['Cookie'] = cookieStr;
+      const response = await axios.get('https://api.live.bilibili.com/live_user/v1/Master/info', {
+        params: { uid: uid },
+        headers,
+        timeout: 3000 // Fast timeout
+      });
+
+      if (response.data.code === 0 && response.data.data && response.data.data.info && response.data.data.info.face) {
+        const face = response.data.data.info.face;
+        if (isRealFace(face)) {
+           return this._processAndCacheFace(uid, face);
+        }
+        candidateFace = face; // Keep as backup
       }
-      
+    } catch (error) {
+      console.log(`⚠️ 直播API获取头像失败(${uid}): ${error.message}`);
+    }
+
+    // 2. 尝试主站 API (x/space/acc/info)
+    try {
       const response = await axios.get('https://api.bilibili.com/x/space/acc/info', {
         params: { mid: uid },
         headers,
-        timeout: 8000
+        timeout: 3000
       });
 
       if (response.data.code === 0 && response.data.data && response.data.data.face) {
-        let faceUrl = response.data.data.face;
-        if (faceUrl && faceUrl.startsWith('http://')) {
-          faceUrl = faceUrl.replace('http://', 'https://');
+        const face = response.data.data.face;
+        if (isRealFace(face)) {
+           return this._processAndCacheFace(uid, face);
         }
-        this.userFaceCache.set(uid, faceUrl);
-        this.saveFaceCache();  // 持久化保存
-        console.log(`✅ 获取头像成功: uid=${uid}`);
-        return faceUrl;
-      } else {
-        console.log(`⚠️  获取头像失败(${uid}): code=${response.data.code}`);
+        if (!candidateFace) candidateFace = face;
       }
     } catch (error) {
-      console.log(`❌ 获取头像异常(${uid}): ${error.message}`);
+      console.log(`⚠️ 主站API获取头像失败(${uid}): ${error.message}`);
     }
 
+    // 3. 尝试 Web Interface Card API (x/web-interface/card)
+    try {
+      const response = await axios.get('https://api.bilibili.com/x/web-interface/card', {
+        params: { mid: uid },
+        headers,
+        timeout: 3000
+      });
+
+      if (response.data.code === 0 && response.data.data && response.data.data.card && response.data.data.card.face) {
+        const face = response.data.data.card.face;
+        if (isRealFace(face)) {
+           return this._processAndCacheFace(uid, face);
+        }
+        if (!candidateFace) candidateFace = face;
+      }
+    } catch (error) {
+      console.log(`⚠️ Card API获取头像失败(${uid}): ${error.message}`);
+    }
+
+    // If we found a candidate (even if it's noface), use it
+    if (candidateFace) {
+        return this._processAndCacheFace(uid, candidateFace);
+    }
+
+    console.log(`❌ 所有途径获取头像失败(${uid})`);
     return null;
+  }
+
+  _processAndCacheFace(uid, faceUrl) {
+      if (faceUrl && faceUrl.startsWith('http://')) {
+          faceUrl = faceUrl.replace('http://', 'https://');
+      }
+      this.userFaceCache.set(uid, faceUrl);
+      this.saveFaceCache();
+      console.log(`✅ 获取头像成功: uid=${uid}`);
+      return faceUrl;
   }
 
   /**
@@ -707,6 +767,8 @@ export class BilibiliLiveWS {
             timestamp: Math.floor(Date.now() / 1000)
           };
           saveMessage(this.roomId, this.currentSessionId, 'danmaku', divider);
+          // 实时推送到前端
+          if (this.onDanmaku) this.onDanmaku(divider);
           // 不重置 currentSessionId，以便记录下播后的弹幕
         }
         
@@ -728,6 +790,8 @@ export class BilibiliLiveWS {
                 timestamp: Math.floor(Date.now() / 1000)
              };
              saveMessage(this.roomId, this.currentSessionId, 'danmaku', divider);
+             // 实时推送到前端
+             if (this.onDanmaku) this.onDanmaku(divider);
           }
           
           if (status && this.onLiveStatus) {
@@ -927,7 +991,25 @@ export class BilibiliLiveWS {
       case 'USER_TOAST_MSG': // 续费/开通舰长 (比 GUARD_BUY 信息更全，价格更准)
         const toastData = data.data;
         const toastUid = toastData.uid;
-        const toastFace = await this.getUserFace(toastUid, true);
+        
+        // Try to get face from data first, otherwise fetch
+        let toastFace = toastData.face || toastData.user_info?.face;
+        if (toastFace && toastFace.startsWith('http://')) {
+            toastFace = toastFace.replace('http://', 'https://');
+        }
+        
+        // If face is missing OR it is the default noface image, try to fetch fresh one
+        // 如果头像缺失或者它是默认的 noface 图像，请尝试获取新的图像
+        if (!toastFace || toastFace.includes('noface')) {
+            const fetchedFace = await this.getUserFace(toastUid, true);
+            // Only use fetched face if it's not the default one (unless we have nothing else)
+            // 仅当获取的头像不是默认头像时才使用它（除非我们没有其他头像）
+            if (fetchedFace && !fetchedFace.includes('noface')) {
+                toastFace = fetchedFace;
+            } else if (!toastFace) {
+                toastFace = fetchedFace || 'https://i0.hdslb.com/bfs/face/member/noface.jpg';
+            }
+        }
         
         const toastGuard = {
           type: 'guard',

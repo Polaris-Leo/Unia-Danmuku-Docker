@@ -1,4 +1,22 @@
 {
+  "30706": {
+    "name": "生日快乐",
+    "icon": "https://i0.hdslb.com/bfs/live/d6892ec263d4e797eb77ebc10b36005b0b1d011b.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/956c3395bfdd08299aaaaef1a5274bd6cfbde12c.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/d6892ec263d4e797eb77ebc10b36005b0b1d011b.webp"
+  },
+  "30707": {
+    "name": "生日蛋糕",
+    "icon": "https://i0.hdslb.com/bfs/live/ad3e2ac350586c22b748df63244f8e18fe5be400.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/790161f6bf203a697a7d26168d96af7cad857bf4.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/ad3e2ac350586c22b748df63244f8e18fe5be400.webp"
+  },
+  "30708": {
+    "name": "生日王冠",
+    "icon": "https://i0.hdslb.com/bfs/live/35211d339d2773b5aa60b2cd799d7f0988d6846c.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/1afa68cf648f2bb0fc414ca20b6bc4cfe86c7663.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/35211d339d2773b5aa60b2cd799d7f0988d6846c.webp"
+  },
   "30869": {
     "name": "心动卡",
     "icon": "https://i0.hdslb.com/bfs/live/9e8a419973840fae4e62089476a0c39d367788e1.webp",
@@ -23,6 +41,12 @@
     "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp"
   },
+  "32307": {
+    "name": "欢乐派对",
+    "icon": "https://i0.hdslb.com/bfs/live/6a5f6e1932744eb44513c47b97ade9507428ff7a.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/25251809aa71ea22f105c0d756421da649719dda.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/6a5f6e1932744eb44513c47b97ade9507428ff7a.webp"
+  },
   "33988": {
     "name": "人气票",
     "icon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp",
@@ -34,6 +58,18 @@
     "icon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp",
     "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp"
+  },
+  "34003": {
+    "name": "人气票",
+    "icon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/7164c955ec0ed7537491d189b821cc68f1bea20d.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp"
+  },
+  "34102": {
+    "name": "人气票",
+    "icon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/7164c955ec0ed7537491d189b821cc68f1bea20d.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/5a2012094bb875a04ea7d036edde3e9c00127ec2.webp"
   },
   "34144": {
     "name": "盛典门票",
@@ -53,6 +89,24 @@
     "staticIcon": "https://s1.hdslb.com/bfs/live/3d7b566664cd95c442e582c1c10e70582acbaf33.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/d46863388435d4d29e332f0f548403b4588fbd34.webp"
   },
+  "34500": {
+    "name": "你真好看",
+    "icon": "https://i0.hdslb.com/bfs/live/4b18fda8bfea01d4bf1b748e77c065455548bd23.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/24afbb083aa700d7576d60a1189d3505262d160d.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/4b18fda8bfea01d4bf1b748e77c065455548bd23.webp"
+  },
+  "34758": {
+    "name": "棒棒糖",
+    "icon": "https://i0.hdslb.com/bfs/live/310e51cec038edd8131238602a894ae2360ce4d4.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/15313516b3ec0875d67130f18c0a53c582e76531.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/310e51cec038edd8131238602a894ae2360ce4d4.webp"
+  },
+  "34979": {
+    "name": "你真好看",
+    "icon": "https://i0.hdslb.com/bfs/live/4b18fda8bfea01d4bf1b748e77c065455548bd23.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/24afbb083aa700d7576d60a1189d3505262d160d.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/4b18fda8bfea01d4bf1b748e77c065455548bd23.webp"
+  },
   "35347": {
     "name": "破壳萌龙",
     "icon": "https://i0.hdslb.com/bfs/live/c1f29d9e96aed42c7c232d9b35736337e25be492.webp",
@@ -64,5 +118,11 @@
     "icon": "https://i0.hdslb.com/bfs/live/ad922a4af511ea4258d2576912ec4dd3cfce2757.webp",
     "staticIcon": "https://s1.hdslb.com/bfs/live/54c66576898b11a56bf43bf38f6a99ab92958e40.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/ad922a4af511ea4258d2576912ec4dd3cfce2757.webp"
+  },
+  "35406": {
+    "name": "超好看",
+    "icon": "https://i0.hdslb.com/bfs/live/382a04eef9cd0bc16df0da8d7e674a0a3f1b2744.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/da895ccba3ad555d011eac06ac54b9b6d2f66bf5.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/382a04eef9cd0bc16df0da8d7e674a0a3f1b2744.webp"
   }
 }
