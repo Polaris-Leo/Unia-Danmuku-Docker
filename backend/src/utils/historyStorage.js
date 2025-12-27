@@ -143,3 +143,202 @@ export async function loadHistory(roomId, sessionId) {
 
   return history;
 }
+
+/**
+ * 获取最新的会话ID
+ */
+export async function getLastSessionId(roomId) {
+  const sessions = await getSessions(roomId);
+  return sessions.length > 0 ? sessions[0] : null;
+}
+
+/**
+ * 移动误入上一场会话的数据到当前会话
+ * @param {string|number} roomId 房间号
+ * @param {string|number} oldSessionId 上一场会话ID
+ * @param {string|number} newSessionId 当前会话ID (作为时间戳阈值)
+ */
+export async function moveStrayData(roomId, oldSessionId, newSessionId) {
+  if (!oldSessionId || !newSessionId || oldSessionId === newSessionId) return;
+  
+  const oldDir = getSessionDir(roomId, oldSessionId);
+  const newDir = getSessionDir(roomId, newSessionId);
+  
+  if (!fs.existsSync(oldDir)) return;
+  ensureDir(newDir);
+
+  const files = ['danmaku.jsonl', 'gift.jsonl', 'guard.jsonl', 'superchat.jsonl'];
+  let movedCount = 0;
+
+  for (const file of files) {
+    const oldFilePath = path.join(oldDir, file);
+    const newFilePath = path.join(newDir, file);
+    
+    if (!fs.existsSync(oldFilePath)) continue;
+
+    try {
+      const content = await fs.promises.readFile(oldFilePath, 'utf-8');
+      const lines = content.split('\n').filter(l => l.trim());
+      
+      const keepLines = [];
+      const moveLines = [];
+      const moveItems = [];
+
+      for (const line of lines) {
+        try {
+          const item = JSON.parse(line);
+          // 兼容不同类型的 timestamp 字段
+          const ts = Number(item.timestamp || item.time || 0);
+          // 归一化为秒 (如果是毫秒则转换)
+          const normalizedTs = ts > 10000000000 ? Math.floor(ts / 1000) : ts;
+          const threshold = Number(newSessionId);
+          const normalizedThreshold = threshold > 10000000000 ? Math.floor(threshold / 1000) : threshold;
+
+          if (normalizedTs >= normalizedThreshold) {
+            moveLines.push(line);
+            moveItems.push(item);
+          } else {
+            keepLines.push(line);
+          }
+        } catch (e) {
+          keepLines.push(line); // 解析失败的保留
+        }
+      }
+
+      if (moveLines.length > 0) {
+        // 1. 重写旧文件
+        await fs.promises.writeFile(oldFilePath, keepLines.join('\n') + (keepLines.length > 0 ? '\n' : ''));
+        
+        // 2. 读取新文件现有内容 (如果存在)
+        let existingItems = [];
+        if (fs.existsSync(newFilePath)) {
+          const newContent = await fs.promises.readFile(newFilePath, 'utf-8');
+          const newLines = newContent.split('\n').filter(l => l.trim());
+          existingItems = newLines.map(l => {
+             try { return JSON.parse(l); } catch(e) { return null; }
+          }).filter(Boolean);
+        }
+
+        // 3. 合并并排序
+        const allItems = [...existingItems, ...moveItems].sort((a, b) => {
+           const tsA = Number(a.timestamp || a.time || 0);
+           const tsB = Number(b.timestamp || b.time || 0);
+           return tsA - tsB;
+        });
+
+        // 4. 写入新文件
+        const newContent = allItems.map(item => JSON.stringify(item)).join('\n') + '\n';
+        await fs.promises.writeFile(newFilePath, newContent);
+        
+        movedCount += moveLines.length;
+        console.log(`[History] Moved ${moveLines.length} items from ${oldSessionId} to ${newSessionId} in ${file}`);
+      }
+    } catch (error) {
+      console.error(`[History] Failed to move data for ${file}:`, error);
+    }
+  }
+  
+  if (movedCount > 0) {
+    console.log(`✅ 成功从 ${oldSessionId} 迁移了 ${movedCount} 条数据到 ${newSessionId}`);
+  }
+}
+
+/**
+ * 对指定会话的所有数据文件进行按时间戳排序
+ */
+export async function sortSessionFiles(roomId, sessionId) {
+    const sessionDir = getSessionDir(roomId, sessionId);
+    if (!fs.existsSync(sessionDir)) return;
+
+    const files = ['danmaku.jsonl', 'gift.jsonl', 'guard.jsonl', 'superchat.jsonl'];
+    
+    for (const file of files) {
+        const filePath = path.join(sessionDir, file);
+        if (!fs.existsSync(filePath)) continue;
+
+        try {
+            const content = await fs.promises.readFile(filePath, 'utf-8');
+            const lines = content.split('\n').filter(l => l.trim());
+            if (lines.length === 0) continue;
+
+            const items = lines.map(line => {
+                try { return JSON.parse(line); } catch (e) { return null; }
+            }).filter(Boolean);
+
+            // 排序
+            items.sort((a, b) => {
+                const tsA = Number(a.timestamp || a.time || 0);
+                const tsB = Number(b.timestamp || b.time || 0);
+                return tsA - tsB;
+            });
+
+            const newContent = items.map(item => JSON.stringify(item)).join('\n') + '\n';
+            await fs.promises.writeFile(filePath, newContent);
+        } catch (e) {
+            console.error(`Failed to sort ${filePath}:`, e);
+        }
+    }
+}
+
+/**
+ * 修复所有重叠的会话数据
+ * 遍历所有场次，将属于下一场（或更晚）的数据移动到正确的文件夹
+ */
+export async function repairOverlappingSessions() {
+    console.log('🔧 开始检查并修复重叠的直播场次...');
+    if (!fs.existsSync(DATA_DIR)) return;
+
+    try {
+        const rooms = await fs.promises.readdir(DATA_DIR);
+        for (const roomId of rooms) {
+            const roomDir = path.join(DATA_DIR, roomId);
+            const stats = await fs.promises.stat(roomDir);
+            if (!stats.isDirectory()) continue;
+
+            // 获取所有场次ID，按时间正序排列
+            const sessions = (await fs.promises.readdir(roomDir))
+                .filter(f => /^\d+$/.test(f))
+                .map(Number)
+                .sort((a, b) => a - b);
+
+            // 遍历每一对相邻的场次
+            for (let i = 0; i < sessions.length - 1; i++) {
+                const currentSession = sessions[i];
+                const nextSession = sessions[i + 1];
+                
+                // 将 currentSession 中所有时间戳 >= nextSession 的数据移动到 nextSession
+                await moveStrayData(roomId, currentSession, nextSession);
+            }
+        }
+        console.log('✅ 重叠场次修复完成');
+    } catch (error) {
+        console.error('修复重叠场次失败:', error);
+    }
+}
+
+/**
+ * 整理所有历史数据的顺序
+ */
+export async function sortAllHistory() {
+    console.log('🧹 开始整理历史数据顺序...');
+    if (!fs.existsSync(DATA_DIR)) return;
+    
+    try {
+        const rooms = await fs.promises.readdir(DATA_DIR);
+        for (const roomId of rooms) {
+            const roomDir = path.join(DATA_DIR, roomId);
+            const stats = await fs.promises.stat(roomDir);
+            if (!stats.isDirectory()) continue;
+            
+            const sessions = await fs.promises.readdir(roomDir);
+            for (const sessionId of sessions) {
+                 if (/^\d+$/.test(sessionId)) {
+                     await sortSessionFiles(roomId, sessionId);
+                 }
+            }
+        }
+        console.log('✨ 历史数据整理完成');
+    } catch (error) {
+        console.error('整理历史数据失败:', error);
+    }
+}

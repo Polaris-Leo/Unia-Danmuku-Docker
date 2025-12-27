@@ -5,7 +5,7 @@ import zlib from 'zlib';
 import fs from 'fs';
 import path from 'path';
 import { getCookieString } from '../utils/cookieStorage.js';
-import { saveMessage } from '../utils/historyStorage.js';
+import { saveMessage, getLastSessionId, moveStrayData } from '../utils/historyStorage.js';
 
 /**
  * B站直播间弹幕WebSocket客户端
@@ -38,6 +38,7 @@ export class BilibiliLiveWS {
     this.lastSessionId = null;    // 上一次直播场次ID
     this.lastSessionEndTime = 0;  // 上一次直播结束(或最后活跃)时间
     this.sessionTimeout = 15 * 60 * 1000; // 会话延续阈值：15分钟
+    this.isLive = false;          // 当前是否在直播
 
     // 事件回调
     this.onDanmaku = null;      // 弹幕消息
@@ -78,16 +79,38 @@ export class BilibiliLiveWS {
         
         // 更新当前会话ID
         if (data.live_status === 1) {
+          this.isLive = true;
           const newSessionId = data.live_time;
           const now = Date.now();
 
+          // 尝试从磁盘恢复 lastSessionId (如果内存中没有)
+          if (!this.lastSessionId) {
+             const lastDiskSession = await getLastSessionId(this.roomId);
+             if (lastDiskSession) {
+                // 只有当磁盘上的最新会话不是当前会话时，才将其视为上一场
+                if (String(lastDiskSession) !== String(newSessionId)) {
+                    this.lastSessionId = lastDiskSession;
+                    // 假设上一场结束时间就是现在（为了安全起见，或者我们可以读取文件最后修改时间，但这里主要为了修复数据）
+                    // 如果是为了断流重连，我们需要更精确的时间。但如果是为了修复数据，我们只需要ID。
+                }
+             }
+          }
+
           // 检查是否可以延续上一场直播 (断流重连逻辑)
           // 如果有上一场记录，且间隔小于阈值(15分钟)
-          if (this.lastSessionId && (now - this.lastSessionEndTime < this.sessionTimeout)) {
+          // 注意：如果 lastSessionEndTime 是 0 (刚启动)，则不能延续，除非我们从磁盘读取了最后修改时间
+          // 这里简化逻辑：如果是刚启动，且检测到新会话ID与磁盘最新不同，则认为是新场次，不延续
+          if (this.lastSessionId && this.lastSessionEndTime > 0 && (now - this.lastSessionEndTime < this.sessionTimeout)) {
             console.log(`🔄 延续上一场直播会话: ${this.lastSessionId} (间隔: ${Math.floor((now - this.lastSessionEndTime)/1000)}秒)`);
             this.currentSessionId = this.lastSessionId;
           } else {
             // 新的直播场次
+            // 检查是否需要迁移数据 (修复之前的 Bug)
+            if (this.lastSessionId && String(this.lastSessionId) !== String(newSessionId)) {
+                console.log(`检测到新场次 ${newSessionId}，正在检查上一场 ${this.lastSessionId} 是否有残留数据...`);
+                await moveStrayData(this.roomId, this.lastSessionId, newSessionId);
+            }
+
             this.currentSessionId = newSessionId;
             this.lastSessionId = newSessionId;
           }
@@ -95,6 +118,7 @@ export class BilibiliLiveWS {
           // 更新最后活跃时间
           this.lastSessionEndTime = now;
         } else {
+          this.isLive = false;
           // 下播状态下，不重置 currentSessionId，以便记录下播后的弹幕
           // this.currentSessionId = null;
         }
@@ -614,7 +638,7 @@ export class BilibiliLiveWS {
         this.ws.send(packet);
 
         // 如果当前正在直播，更新最后活跃时间
-        if (this.currentSessionId) {
+        if (this.isLive && this.currentSessionId) {
           this.lastSessionEndTime = Date.now();
         }
       }
@@ -758,6 +782,8 @@ export class BilibiliLiveWS {
     switch (cmd) {
       case 'PREPARING': // 直播准备中（下播）
         console.log('💤 直播准备中 (PREPARING)');
+        this.isLive = false;
+        this.lastSessionEndTime = Date.now(); // 记录下播时间
         
         // 记录直播结束分界线
         if (this.currentSessionId) {
@@ -777,6 +803,7 @@ export class BilibiliLiveWS {
 
       case 'LIVE': // 直播开始
         console.log('▶️ 直播开始 (LIVE)');
+        this.isLive = true;
         // 延迟获取状态，确保API更新
         setTimeout(async () => {
           const oldSessionId = this.currentSessionId;
@@ -1119,27 +1146,6 @@ export class BilibiliLiveWS {
       case 'ONLINE_RANK_V3': // 高能榜V3
       case 'STOP_LIVE_ROOM_LIST': // 停播房间列表
         // 这些消息数据量大但用处不大，静默处理
-        break;
-
-      case 'LIVE': // 开播
-        console.log('📺 直播间已开播');
-        // 重新获取详细信息以获得准确的开播时间
-        setTimeout(async () => {
-          const status = await this.getLiveStatus();
-          if (status && this.onLiveStatus) {
-            this.onLiveStatus(status);
-          }
-        }, 2000); // 延迟2秒确保API已更新
-        break;
-
-      case 'PREPARING': // 下播
-        console.log('💤 直播间已下播');
-        if (this.onLiveStatus) {
-          this.onLiveStatus({
-            liveStatus: 0,
-            liveStartTime: 0
-          });
-        }
         break;
       
       default:

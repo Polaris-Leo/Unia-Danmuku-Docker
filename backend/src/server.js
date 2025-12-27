@@ -10,6 +10,7 @@ import danmakuRoutes, { createDanmakuWSS } from './routes/danmaku.js';
 import monitorRoutes from './routes/monitor.js';
 import historyRoutes from './routes/history.js';
 import { roomManager } from './services/roomManager.js';
+import { sortAllHistory, repairOverlappingSessions } from './utils/historyStorage.js';
 
 dotenv.config();
 
@@ -67,8 +68,17 @@ app.use((err, req, res, next) => {
 });
 
 // 启动服务器
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL}`);
-  console.log(`🌐 WebSocket URL: ws://localhost:${PORT}/ws/danmaku`);
-});
+const startServer = async () => {
+  // 1. 先修复重叠数据 (将误入旧场次的新数据移动到新场次)
+  await repairOverlappingSessions();
+  // 2. 再整理数据顺序 (确保文件内按时间戳排序)
+  await sortAllHistory();
+
+  server.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`📱 Frontend URL: ${process.env.FRONTEND_URL}`);
+    console.log(`🌐 WebSocket URL: ws://localhost:${PORT}/ws/danmaku`);
+  });
+};
+
+startServer();

@@ -35,7 +35,19 @@
     "staticIcon": "https://s1.hdslb.com/bfs/live/91ac8e35dd93a7196325f1e2052356e71d135afb.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/7571c8bdfcb65f9b00ab1307b2c86630f0d00859.webp"
   },
+  "31044": {
+    "name": "情书",
+    "icon": "https://i0.hdslb.com/bfs/live/b459daf4c70bbf836fb719f38b57c7913359455e.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/14dafbf217618f0931c08897e0b3eefc00d0da22.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/b459daf4c70bbf836fb719f38b57c7913359455e.webp"
+  },
   "31164": {
+    "name": "粉丝团灯牌",
+    "icon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp"
+  },
+  "31738": {
     "name": "粉丝团灯牌",
     "icon": "https://i0.hdslb.com/bfs/live/32b799120e1614fa6275b6d15da7a52b21dd019d.webp",
     "staticIcon": "https://s1.hdslb.com/bfs/live/e051dfd4557678f8edcac4993ed00a0935cbd9cc.png",
@@ -76,6 +88,12 @@
     "icon": "https://i0.hdslb.com/bfs/live/af41e45d22833f31e53005bc12d3364909b96ae0.webp",
     "staticIcon": "https://s1.hdslb.com/bfs/live/bb000147d5214593be0c5ca00f8f47ddc8a52251.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/af41e45d22833f31e53005bc12d3364909b96ae0.webp"
+  },
+  "34315": {
+    "name": "喜欢你",
+    "icon": "https://i0.hdslb.com/bfs/live/8bedf765322d218e363251a712d0853874847146.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/5d940270c22a17fa2ff17a0713b4383b6febd945.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/8bedf765322d218e363251a712d0853874847146.webp"
   },
   "34358": {
     "name": "粉丝团灯牌",
@@ -118,6 +136,12 @@
     "icon": "https://i0.hdslb.com/bfs/live/ad922a4af511ea4258d2576912ec4dd3cfce2757.webp",
     "staticIcon": "https://s1.hdslb.com/bfs/live/54c66576898b11a56bf43bf38f6a99ab92958e40.png",
     "dynamicIcon": "https://i0.hdslb.com/bfs/live/ad922a4af511ea4258d2576912ec4dd3cfce2757.webp"
+  },
+  "35404": {
+    "name": "晚安好梦",
+    "icon": "https://i0.hdslb.com/bfs/live/47919db5c20a557aa34e4e288f8f33e2f7fa515e.webp",
+    "staticIcon": "https://s1.hdslb.com/bfs/live/1075998e84a508f36334c2f23ab74b560796e1dc.png",
+    "dynamicIcon": "https://i0.hdslb.com/bfs/live/47919db5c20a557aa34e4e288f8f33e2f7fa515e.webp"
   },
   "35406": {
     "name": "超好看",

@@ -199,6 +199,7 @@ function DanmakuPage() {
   // 直播状态
   const [liveStatus, setLiveStatus] = useState(0); // 0: 未开播, 1: 直播中, 2: 轮播
   const [liveStartTime, setLiveStartTime] = useState(0);
+  const liveStartTimeRef = useRef(0); // Ref to track liveStartTime immediately
   const [liveDuration, setLiveDuration] = useState('00:00:00');
   
   // 滚动状态
@@ -221,7 +222,23 @@ function DanmakuPage() {
     const saved = localStorage.getItem('onlyCurrentSession');
     return saved !== null ? saved === 'true' : true;
   });
+  const onlyCurrentSessionRef = useRef(onlyCurrentSession);
+
+  useEffect(() => {
+    onlyCurrentSessionRef.current = onlyCurrentSession;
+  }, [onlyCurrentSession]);
+
   const [loadedHistorySessions, setLoadedHistorySessions] = useState(new Set());
+  const loadedHistorySessionsRef = useRef(loadedHistorySessions);
+
+  // 全量数据缓存 (用于滚动加载)
+  const fullDanmakuListRef = useRef([]);
+  const fullScListRef = useRef([]);
+  const fullGiftListRef = useRef([]);
+
+  useEffect(() => {
+    loadedHistorySessionsRef.current = loadedHistorySessions;
+  }, [loadedHistorySessions]);
 
   // 用户弹窗状态
   const [selectedUser, setSelectedUser] = useState(null);
@@ -246,6 +263,7 @@ function DanmakuPage() {
   const danmakuEndRef = useRef(null);
   const scEndRef = useRef(null);
   const giftEndRef = useRef(null);
+  const isLoadingHistoryRef = useRef(false);
 
   // Ref to track auto-scroll state in closures (like handleMessage)
   // Ref 用于在闭包（如 handleMessage）中跟踪自动滚动状态
@@ -312,10 +330,16 @@ function DanmakuPage() {
   const handleScroll = (e) => {
     if (!danmakuListRef.current) return;
     
+    const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
+    
+    // 检查是否滚动到顶部，触发加载更多历史
+    if (scrollTop < 20) {
+        loadMoreFromBuffer('danmaku');
+    }
+
     // 仅在用户主动滚动时检查手动滚动
     // 我们可以通过检查是否在自动滚动开启时发生滚动，但现在不在底部来推断
     
-    const { scrollTop, scrollHeight, clientHeight } = danmakuListRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
     
     // 如果用户手动向上滚动（通常 deltaY < 0，但这里我们检查位置）
@@ -325,6 +349,75 @@ function DanmakuPage() {
     // 并且我们当前没有处于自动滚动过程中（这在 React 状态中很难完美跟踪）。
     // 对于“仅手动”更好的方法：
     // 使用 `onWheel` 或 `onTouchMove` 事件来检测用户交互。
+  };
+
+  // 从缓存加载更多数据
+  const loadMoreFromBuffer = (type) => {
+      let fullListRef, setList, currentList, step;
+      
+      if (type === 'danmaku') {
+          fullListRef = fullDanmakuListRef;
+          setList = setDanmakuList;
+          currentList = danmakuList;
+          step = 100;
+      } else if (type === 'sc') {
+          fullListRef = fullScListRef;
+          setList = setScList;
+          currentList = scList;
+          step = 20;
+      } else if (type === 'gift') {
+          fullListRef = fullGiftListRef;
+          setList = setGiftList;
+          currentList = giftList;
+          step = 50;
+      } else {
+          return;
+      }
+
+      if (!fullListRef.current || fullListRef.current.length === 0) return;
+      if (!currentList || currentList.length === 0) return;
+
+      const firstVisibleId = currentList[0].id;
+      let fullIndex = fullListRef.current.findIndex(item => item.id === firstVisibleId);
+
+      if (fullIndex === -1) {
+          // 如果未找到（可能是新消息不在历史缓存中），假设我们处于缓存的末尾
+          fullIndex = fullListRef.current.length;
+      }
+
+      if (fullIndex > 0) {
+          // 还有更多缓存数据可加载
+          const startIndex = Math.max(0, fullIndex - step);
+          const newItems = fullListRef.current.slice(startIndex, fullIndex);
+          
+          // 记录当前滚动高度
+          let listRef;
+          if (type === 'danmaku') listRef = danmakuListRef;
+          else if (type === 'sc') listRef = scListRef;
+          else if (type === 'gift') listRef = giftListRef;
+
+          const oldScrollHeight = listRef.current ? listRef.current.scrollHeight : 0;
+          const oldScrollTop = listRef.current ? listRef.current.scrollTop : 0;
+
+          setList(prev => [...newItems, ...prev]);
+
+          // 恢复滚动位置 (在渲染后)
+          // 由于 React 状态更新是异步的，这里使用 setTimeout 稍微延迟
+          // 或者更好的方式是使用 useLayoutEffect 监听 list 变化，但这里简单处理
+          requestAnimationFrame(() => {
+              if (listRef.current) {
+                  const newScrollHeight = listRef.current.scrollHeight;
+                  const heightDiff = newScrollHeight - oldScrollHeight;
+                  listRef.current.scrollTop = oldScrollTop + heightDiff;
+              }
+          });
+      } else {
+          // 缓存已用尽，尝试加载更早的历史场次
+          // 仅当不是“仅查看当前场次”模式时
+          if (!onlyCurrentSessionRef.current && !isLoadingHistoryRef.current) {
+              loadPreviousHistory();
+          }
+      }
   };
 
   // 检测用户手动交互以暂停自动滚动
@@ -352,6 +445,14 @@ function DanmakuPage() {
   };
 
   // SC 滚动处理
+  const handleScScroll = (e) => {
+      if (!scListRef.current) return;
+      const { scrollTop } = scListRef.current;
+      if (scrollTop < 20) {
+          loadMoreFromBuffer('sc');
+      }
+  };
+
   const handleScUserScrollInteraction = () => {
     if (!scListRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = scListRef.current;
@@ -374,6 +475,14 @@ function DanmakuPage() {
   };
 
   // 礼物滚动处理
+  const handleGiftScroll = (e) => {
+      if (!giftListRef.current) return;
+      const { scrollTop } = giftListRef.current;
+      if (scrollTop < 20) {
+          loadMoreFromBuffer('gift');
+      }
+  };
+
   const handleGiftUserScrollInteraction = () => {
     if (!giftListRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = giftListRef.current;
@@ -488,7 +597,13 @@ function DanmakuPage() {
   };
 
   const loadPreviousHistory = async () => {
-    if (!roomId) return;
+    if (isLoadingHistoryRef.current) return;
+    isLoadingHistoryRef.current = true;
+
+    if (!roomId) {
+        isLoadingHistoryRef.current = false;
+        return;
+    }
     try {
       const res = await getHistorySessions(roomId);
       if (!res.success || !res.sessions || res.sessions.length === 0) return;
@@ -506,7 +621,7 @@ function DanmakuPage() {
       let targetSessionId = null;
       
       for (const sessionId of sortedSessions) {
-        if (loadedHistorySessions.has(sessionId)) continue;
+        if (loadedHistorySessionsRef.current.has(sessionId)) continue;
         
         if (liveStartTime > 0) {
           if (sessionId < liveStartTime) {
@@ -527,58 +642,90 @@ function DanmakuPage() {
       
       // 加载该 session 数据
       const dataRes = await getHistoryData(roomId, targetSessionId);
+      
+      // 如果在加载过程中用户切换回了“仅查看当前场次”，则丢弃数据
+      if (onlyCurrentSessionRef.current) return;
+
       if (dataRes.success) {
         const { danmaku, superchat, gift, guard } = dataRes.data;
         
         // 标记为已加载
         setLoadedHistorySessions(prev => new Set(prev).add(targetSessionId));
         
-        // 处理数据
-        const historyDanmaku = (danmaku || []).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
-        const historySc = (superchat || []).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
-        const historyGift = (gift || []).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
-        const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
+        // 处理数据，并过滤掉原始数据中的 divider（防止重复或位置错误）
+        const filterDivider = item => item.type !== 'divider';
+        
+        const historyDanmaku = (danmaku || []).filter(filterDivider).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
+        const historySc = (superchat || []).filter(filterDivider).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
+        const historyGift = (gift || []).filter(filterDivider).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
+        const historyGuard = (guard || []).filter(filterDivider).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
         
         // 创建分界线
         // 分界线时间戳设为该场次最后一条消息的时间，或者下一场开始前
         // 这里简单用该场次最大的时间戳
-        let maxTime = targetSessionId;
+        let maxTime = Number(targetSessionId);
         [...historyDanmaku, ...historySc, ...historyGift, ...historyGuard].forEach(item => {
-            const t = item.timestamp || item.time || 0;
+            const t = Number(item.timestamp || item.time || 0);
             if (t > maxTime) maxTime = t;
         });
         
-        const divider = {
+        const startTime = new Date(Number(targetSessionId) * 1000);
+        const startTimeStr = startTime.toLocaleString('zh-CN', {
+            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+        });
+
+        const startDivider = {
+            type: 'divider',
+            content: `直播开始 ${startTimeStr}`,
+            timestamp: Number(targetSessionId),
+            id: `divider-start-${targetSessionId}-${generateId()}`
+        };
+
+        const endDivider = {
             type: 'divider',
             content: '直播已结束',
             timestamp: maxTime + 1,
-            id: `divider-${targetSessionId}-${generateId()}`
+            id: `divider-end-${targetSessionId}-${generateId()}`
         };
         
         // 合并到列表头部
-        setDanmakuList(prev => [...historyDanmaku, divider, ...prev]);
-        setScList(prev => [...historySc, divider, ...prev]);
+        setDanmakuList(prev => [startDivider, ...historyDanmaku, endDivider, ...prev]);
+        setScList(prev => [startDivider, ...historySc, endDivider, ...prev]);
         
         const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-        setGiftList(prev => [...combinedGifts, divider, ...prev]);
+        setGiftList(prev => [startDivider, ...combinedGifts, endDivider, ...prev]);
         
       }
       
     } catch (error) {
       console.error('加载历史数据失败:', error);
+    } finally {
+      isLoadingHistoryRef.current = false;
     }
   };
 
   // 如果设置关闭，则初始加载历史记录
   useEffect(() => {
-    if (roomId && !onlyCurrentSession && loadedHistorySessions.size === 0) {
-      // 稍微延迟以允许 live_status 到达（如果已连接）
-      const timer = setTimeout(() => {
-        loadPreviousHistory();
-      }, 1000);
-      return () => clearTimeout(timer);
+    if (roomId && !onlyCurrentSession) {
+      // 检查是否已经加载了足够的历史记录
+      // 如果正在直播，我们需要至少加载一个早于当前直播开始时间的场次（即上一场）
+      // 如果没在直播，只要加载了任意场次即可
+      const hasLoadedHistory = Array.from(loadedHistorySessions).some(id => {
+        if (liveStartTime > 0) {
+          return Number(id) < liveStartTime;
+        }
+        return true;
+      });
+
+      if (!hasLoadedHistory) {
+        // 稍微延迟以允许 live_status 到达（如果已连接）
+        const timer = setTimeout(() => {
+          loadPreviousHistory();
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [roomId, connected, onlyCurrentSession]);
+  }, [roomId, connected, onlyCurrentSession, liveStartTime, loadedHistorySessions]);
 
   const checkAuth = async () => {
     try {
@@ -723,8 +870,15 @@ function DanmakuPage() {
         const historyGift = (gift || []).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
         const historyGuard = (guard || []).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
 
-        setDanmakuList(historyDanmaku); // 加载所有历史记录，而不仅仅是最后 200 条
-        setScList(historySc);
+        // 存入完整列表 Ref
+        fullDanmakuListRef.current = historyDanmaku;
+        fullScListRef.current = historySc;
+
+        // 设置初始显示状态 (历史模式限制)
+        // 弹幕：最后100条
+        setDanmakuList(historyDanmaku.slice(-100));
+        // SC：最后20条
+        setScList(historySc.slice(-20));
         
         // 合并礼物和舰长
         const combinedGifts = [...historyGift, ...historyGuard].sort((a, b) => {
@@ -732,7 +886,10 @@ function DanmakuPage() {
           const timeB = b.timestamp || 0;
           return timeA - timeB;
         });
-        setGiftList(combinedGifts);
+        
+        fullGiftListRef.current = combinedGifts;
+        // 礼物：最后50条
+        setGiftList(combinedGifts.slice(-50));
         
         // 加载后滚动到底部
         setTimeout(() => {
@@ -936,6 +1093,43 @@ function DanmakuPage() {
       case 'live_status':
         setLiveStatus(data.liveStatus);
         setLiveStartTime(data.liveStartTime);
+        liveStartTimeRef.current = data.liveStartTime; // Update Ref
+
+        // 如果正在直播，且有开始时间，尝试在当前列表中插入“直播开始”分割线
+        if (data.liveStatus === 1 && data.liveStartTime > 0) {
+            const addStartDivider = (prevList) => {
+                // 检查是否已存在该场次的开始分割线
+                // 我们使用时间戳作为唯一标识的一部分
+                const hasDivider = prevList.some(item => 
+                    item.type === 'divider' && 
+                    item.content.includes('直播开始') && 
+                    Math.abs(Number(item.timestamp) - Number(data.liveStartTime)) < 60 // 允许1分钟误差
+                );
+                
+                if (hasDivider) return prevList;
+
+                const startTime = new Date(data.liveStartTime * 1000);
+                const startTimeStr = startTime.toLocaleString('zh-CN', {
+                    month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                });
+
+                const startDivider = {
+                    type: 'divider',
+                    content: `直播开始 ${startTimeStr}`,
+                    timestamp: Number(data.liveStartTime),
+                    id: `divider-start-${data.liveStartTime}-${generateId()}`
+                };
+
+                // 插入并排序
+                // 注意：如果列表中有更早的历史记录（通过 loadPreviousHistory 加载的），
+                // 简单的排序会将此分割线放在中间，这是正确的。
+                return [...prevList, startDivider].sort((a, b) => (Number(a.timestamp || a.time || 0) - Number(b.timestamp || b.time || 0)));
+            };
+
+            setDanmakuList(prev => addStartDivider(prev));
+            setScList(prev => addStartDivider(prev));
+            setGiftList(prev => addStartDivider(prev));
+        }
         break;
       case 'room_info':
         console.log('Received room_info:', data.data);
@@ -947,13 +1141,52 @@ function DanmakuPage() {
         setWatchedCount(data.data.watchedCount);
         break;
       case 'history':
-        const historyDanmaku = (data.data.danmaku || []).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
-        const historySc = (data.data.superchat || []).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
-        const historyGift = (data.data.gift || []).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
-        const historyGuard = (data.data.guard || []).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
+        // 过滤掉历史记录中的 divider，防止出现错误的“直播已结束”或重复的“直播开始”
+        const filterHistDivider = item => item.type !== 'divider';
+        
+        const historyDanmaku = (data.data.danmaku || []).filter(filterHistDivider).map(item => ({ ...item, id: item.id || generateId('hist-dm') }));
+        const historySc = (data.data.superchat || []).filter(filterHistDivider).map(item => ({ ...item, id: item.id || generateId('hist-sc') }));
+        const historyGift = (data.data.gift || []).filter(filterHistDivider).map(item => ({ ...item, id: item.id || generateId('hist-gift') }));
+        const historyGuard = (data.data.guard || []).filter(filterHistDivider).map(item => ({ ...item, id: item.id || generateId('hist-guard') }));
 
-        setDanmakuList(historyDanmaku.slice(-200));
-        setScList(historySc.slice(-100));
+        // 如果当前正在直播，且有开始时间，手动添加“直播开始”分割线
+        // 因为 history 事件会覆盖列表，导致 live_status 添加的分割线丢失
+        const currentLiveStart = liveStartTimeRef.current;
+        let startDivider = null;
+        
+        if (currentLiveStart > 0) {
+             const startTime = new Date(currentLiveStart * 1000);
+             const startTimeStr = startTime.toLocaleString('zh-CN', {
+                 month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+             });
+             startDivider = {
+                 type: 'divider',
+                 content: `直播开始 ${startTimeStr}`,
+                 timestamp: Number(currentLiveStart),
+                 id: `divider-start-${currentLiveStart}-${generateId()}`
+             };
+        }
+
+        // 准备完整列表并存入 Ref
+        let fullDanmaku = historyDanmaku;
+        let fullSc = historySc;
+
+        if (startDivider) {
+            fullDanmaku = [startDivider, ...fullDanmaku].sort((a, b) => (Number(a.timestamp || a.time || 0) - Number(b.timestamp || b.time || 0)));
+            fullSc = [startDivider, ...fullSc].sort((a, b) => (Number(a.timestamp || a.time || 0) - Number(b.timestamp || b.time || 0)));
+        } else {
+            // 即使没有分割线，也确保排序
+            fullDanmaku.sort((a, b) => (Number(a.timestamp || a.time || 0) - Number(b.timestamp || b.time || 0)));
+            fullSc.sort((a, b) => (Number(a.timestamp || a.time || 0) - Number(b.timestamp || b.time || 0)));
+        }
+
+        fullDanmakuListRef.current = fullDanmaku;
+        fullScListRef.current = fullSc;
+
+        // 设置初始显示状态
+        // 本场直播：弹幕加载最后500条，SC加载全部
+        setDanmakuList(fullDanmaku.slice(-500));
+        setScList(fullSc);
         
         // Helper to normalize timestamp to milliseconds
         // 辅助函数：将时间戳归一化为毫秒
@@ -973,6 +1206,11 @@ function DanmakuPage() {
         // Process stacking for history gifts
         // 处理历史礼物的堆叠
         const processedGifts = [];
+        // 如果有开始分割线，先加入
+        if (startDivider) {
+            processedGifts.push(startDivider);
+        }
+
         combinedGifts.forEach(msg => {
           if (msg.type === 'divider') {
              processedGifts.push(msg);
@@ -1038,7 +1276,12 @@ function DanmakuPage() {
           processedGifts.push(currentMsg);
         });
         
-        setGiftList(processedGifts.slice(-100));
+        // 再次排序以确保分割线位置正确（如果它被推到了中间）
+        processedGifts.sort((a, b) => (Number(a.timestamp || a.time || 0) - Number(b.timestamp || b.time || 0)));
+        
+        fullGiftListRef.current = processedGifts;
+        // 本场直播：礼物加载全部
+        setGiftList(processedGifts);
         break;
       default:
         break;
@@ -1465,7 +1708,7 @@ function DanmakuPage() {
           <div 
             className="column-body"
             ref={scListRef}
-            onScroll={handleScScrollCheck}
+            onScroll={(e) => { handleScScroll(e); handleScScrollCheck(); }}
             onWheel={handleScUserScrollInteraction}
             onTouchMove={handleScUserScrollInteraction}
           >
@@ -1535,7 +1778,7 @@ function DanmakuPage() {
           <div 
             className="column-body"
             ref={giftListRef}
-            onScroll={handleGiftScrollCheck}
+            onScroll={(e) => { handleGiftScroll(e); handleGiftScrollCheck(); }}
             onWheel={handleGiftUserScrollInteraction}
             onTouchMove={handleGiftUserScrollInteraction}
           >
